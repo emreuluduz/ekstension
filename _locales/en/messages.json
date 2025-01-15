@@ -1,5 +1,94 @@
 {
-    "context_menu_search":{
-        "message":"Search on ek$$i.."
+    "extension_name": {
+        "message": "ek$tension",
+        "description": "The name of the extension"
+    },
+    "extension_description": {
+        "message": "Quick search and topic filtering extension for Ekşi Sözlük",
+        "description": "The description of the extension"
+    },
+    "context_menu_search": {
+        "message": "Search on Ekşi Sözlük",
+        "description": "Context menu item text for searching"
+    },
+    "settings_title": {
+        "message": "Settings",
+        "description": "Title of the settings panel"
+    },
+    "filter_words_label": {
+        "message": "Filter Words",
+        "description": "Label for filter words input"
+    },
+    "theme_label": {
+        "message": "Theme",
+        "description": "Theme selection label"
+    },
+    "theme_auto": {
+        "message": "System Theme",
+        "description": "Automatic theme option"
+    },
+    "theme_light": {
+        "message": "Light Theme",
+        "description": "Light theme option"
+    },
+    "filter_input_placeholder": {
+        "message": "add word...",
+        "description": "Placeholder text for filter input"
+    },
+    "save_button": {
+        "message": "Save",
+        "description": "Save button text"
+    },
+    "cancel_button": {
+        "message": "Cancel",
+        "description": "Cancel button text"
+    },
+    "loading_text": {
+        "message": "Loading topics...",
+        "description": "Loading message"
+    },
+    "error_loading": {
+        "message": "Failed to load topics",
+        "description": "Error message when topics fail to load"
+    },
+    "header_title": {
+        "message": "Topics",
+        "description": "Header title in popup"
+    },
+    "tab_general": {
+        "message": "General"
+    },
+    "tab_favorites": {
+        "message": "Favorites"
+    },
+    "tab_following": {
+        "message": "Following"
+    },
+    "tab_notifications": {
+        "message": "Notifications"
+    },
+    "notification_settings_label": {
+        "message": "Notification Settings"
+    },
+    "notifications_enabled": {
+        "message": "Enable Notifications"
+    },
+    "check_interval": {
+        "message": "Check Interval"
+    },
+    "no_following": {
+        "message": "No topics being followed yet"
+    },
+    "notification_success": {
+        "message": "Follow Success"
+    },
+    "notification_success_message": {
+        "message": "Started following \"%1\""
+    },
+    "new_entries_message": {
+        "message": "%1 new entries"
+    },
+    "go_to_topic": {
+        "message": "Go to Topic"
     }
 }

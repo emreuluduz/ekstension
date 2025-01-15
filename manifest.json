@@ -1,7 +1,7 @@
 {
-    "name": "ek$tension",
+    "name": "__MSG_extension_name__",
     "version": "1.0.0",
-    "description": "Searches selected texts on Ekşi Sözlük",
+    "description": "__MSG_extension_description__",
     "manifest_version": 3,
     "author": "Emre Uludüz",
     "default_locale": "en",
@@ -16,10 +16,28 @@
         "default_title": "ek$tension"
     },
     "background": {
-        "service_worker": "src/background/background.js"
+        "service_worker": "src/background/background.js",
+        "type": "module"
     },
     "permissions": [
         "contextMenus",
-        "tabs"
-    ]
+        "tabs",
+        "activeTab",
+        "scripting",
+        "storage",
+        "notifications",
+        "alarms",
+        "offscreen"
+    ],
+    "host_permissions": [
+        "*://*.eksisozluk.com/*"
+    ],
+    "web_accessible_resources": [{
+        "resources": [
+          "src/actions/js/storage.js",
+          "src/offscreen/offscreen.html",
+          "src/offscreen/offscreen.js"
+        ],
+        "matches": ["*://*.eksisozluk.com/*"]
+    }]
 }

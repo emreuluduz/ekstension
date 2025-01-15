@@ -1,5 +1,122 @@
 {
-    "context_menu_search":{
-        "message":"ek$$ide ara.."
+    "extension_name": {
+        "message": "ek$tension",
+        "description": "Eklentinin adı"
+    },
+    "header_title": {
+        "message": "Gündem",
+        "description": "Popup başlığı"
+    },
+    "extension_description": {
+        "message": "Ekşi Sözlük için hızlı arama ve başlık filtreleme eklentisi",
+        "description": "Eklentinin açıklaması"
+    },
+    "context_menu_search": {
+        "message": "Ekşi Sözlük'te ara",
+        "description": "Sağ tık menüsündeki arama seçeneği"
+    },
+    "settings_title": {
+        "message": "Ayarlar",
+        "description": "Ayarlar paneli başlığı"
+    },
+    "filter_words_label": {
+        "message": "Filtrelenecek Kelimeler",
+        "description": "Filtre kelimeleri girişi etiketi"
+    },
+    "theme_label": {
+        "message": "Tema",
+        "description": "Tema seçimi etiketi"
+    },
+    "theme_auto": {
+        "message": "Sistem Teması",
+        "description": "Otomatik tema seçeneği"
+    },
+    "filter_input_placeholder": {
+        "message": "kelime ekle...",
+        "description": "Filtre girişi için placeholder metni"
+    },
+    "save_button": {
+        "message": "Kaydet",
+        "description": "Kaydet butonu metni"
+    },
+    "cancel_button": {
+        "message": "İptal",
+        "description": "İptal butonu metni"
+    },
+    "loading_text": {
+        "message": "Başlıklar yükleniyor...",
+        "description": "Yükleme mesajı"
+    },
+    "error_loading": {
+        "message": "Başlıklar yüklenemedi",
+        "description": "Başlıklar yüklenemediğinde gösterilen hata mesajı"
+    },
+    "theme_light": {
+        "message": "Açık Tema",
+        "description": "Açık tema seçeneği"
+    },
+    "theme_dark": {
+        "message": "Koyu Tema",
+        "description": "Koyu tema seçeneği"
+    },
+    "tab_general": {
+        "message": "Genel",
+        "description": "Genel ayarlar sekmesi"
+    },
+    "tab_favorites": {
+        "message": "Favoriler",
+        "description": "Favoriler sekmesi"
+    },
+    "tab_following": {
+        "message": "Takip",
+        "description": "Takip edilenler sekmesi"
+    },
+    "tab_notifications": {
+        "message": "Bildirimler",
+        "description": "Bildirimler sekmesi"
+    },
+    "notification_settings_label": {
+        "message": "Bildirim Ayarları",
+        "description": "Bildirim ayarları etiketi"
+    },
+    "notifications_enabled": {
+        "message": "Bildirimleri Aç",
+        "description": "Bildirimleri açma seçeneği"
+    },
+    "check_interval": {
+        "message": "Kontrol Sıklığı",
+        "description": "Kontrol sıklığı etiketi"
+    },
+    "favorites_label": {
+        "message": "Favori Başlıklar",
+        "description": "Favori başlıklar listesi etiketi"
+    },
+    "following_label": {
+        "message": "Takip Edilen Başlıklar",
+        "description": "Takip edilen başlıklar listesi etiketi"
+    },
+    "no_favorites": {
+        "message": "Henüz favori başlık eklenmemiş",
+        "description": "Favori başlık olmadığında gösterilen mesaj"
+    },
+    "no_following": {
+        "message": "Henüz takip edilen başlık yok",
+        "description": "Takip edilen başlık olmadığında gösterilen mesaj"
+    },
+    "notification_success": {
+        "message": "Takip Başarılı",
+        "description": "Başlık takip edilmeye başlandığında gösterilen bildirim başlığı"
+    },
+    "notification_success_message": {
+        "message": "\"%1\" başlığı takip edilmeye başlandı.",
+        "description": "Başlık takip edilmeye başlandığında gösterilen bildirim mesajı"
+    },
+    "new_entries_message": {
+        "message": "%1 yeni entry girildi",
+        "description": "Yeni entry girildiğinde gösterilen bildirim mesajı"
+    },
+    "go_to_topic": {
+        "message": "Başlığa Git",
+        "description": "Bildirimde gösterilen başlığa gitme butonu"
     }
 }
