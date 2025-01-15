@@ -12,17 +12,21 @@ export const Topics = {
     try {
       // Önce cache'e bak
       const cachedData = await Cache.get(CACHE_KEYS.TOPICS);
-      if (Array.isArray(cachedData) && cachedData.length > 0) {
+      const cacheAge = await Cache.getAge(CACHE_KEYS.TOPICS);
+      const maxAge = 5 * 60 * 1000; // 5 dakika
+      
+      if (Array.isArray(cachedData) && cachedData.length > 0 && cacheAge < maxAge) {
         this.cachedTopics = cachedData;
         await this.render(cachedData);
         return;
       }
 
-      // Cache'de yoksa API'den al
+      // Cache'de yoksa veya eskiyse API'den al
       const response = await chrome.runtime.sendMessage({ action: MESSAGE_TYPES.FETCH_TOPICS });
       if (response && Array.isArray(response.titles) && response.titles.length > 0) {
         this.cachedTopics = response.titles;
         await Cache.set(CACHE_KEYS.TOPICS, response.titles);
+        await Cache.setAge(CACHE_KEYS.TOPICS);
         await this.render(response.titles);
       } else {
         UI.showError();
@@ -111,8 +115,19 @@ export const Topics = {
   },
 
   async refresh() {
+    UI.showLoading();
     await Cache.clear();
-    await this.load();
+    
+    // API'den yeni verileri al
+    const response = await chrome.runtime.sendMessage({ action: MESSAGE_TYPES.FETCH_TOPICS });
+    if (response && Array.isArray(response.titles) && response.titles.length > 0) {
+      this.cachedTopics = response.titles;
+      await Cache.set(CACHE_KEYS.TOPICS, response.titles);
+      await Cache.setAge(CACHE_KEYS.TOPICS);
+      await this.render(response.titles);
+    } else {
+      UI.showError();
+    }
     
     const refreshIcon = UI.elements.refreshBtn.querySelector('.material-icons');
     refreshIcon.classList.add('rotating');

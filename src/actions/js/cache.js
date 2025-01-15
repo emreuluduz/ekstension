@@ -1,21 +1,31 @@
-export class Cache {
-  static async get(key) {
+export const Cache = {
+  async get(key) {
     return new Promise((resolve) => {
-      chrome.storage.local.get([key], (result) => {
-        resolve(result[key] || []);
+      chrome.storage.local.get(key, (result) => {
+        resolve(result[key]);
       });
     });
-  }
+  },
 
-  static async set(key, value) {
+  async set(key, value) {
     return new Promise((resolve) => {
-      chrome.storage.local.set({ [key]: Array.isArray(value) ? value : [] }, resolve);
+      chrome.storage.local.set({ [key]: value }, resolve);
     });
-  }
+  },
 
-  static async clear() {
+  async getAge(key) {
+    const timestamp = await this.get(`${key}_timestamp`);
+    if (!timestamp) return Infinity;
+    return Date.now() - timestamp;
+  },
+
+  async setAge(key) {
+    await this.set(`${key}_timestamp`, Date.now());
+  },
+
+  async clear() {
     return new Promise((resolve) => {
       chrome.storage.local.clear(resolve);
     });
   }
-} 
+}; 

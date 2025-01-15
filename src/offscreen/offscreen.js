@@ -37,10 +37,11 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
         return;
       }
       
-      const fullText = titleElement.textContent.trim();
-      const match = fullText.match(/(.*?)\s*(\d+)\s*$/);
+      // Entry sayısını small etiketinden al
+      const entryCountElement = titleElement.querySelector('small');
+      const title = titleElement.childNodes[0].textContent.trim();
       
-      if (!match) {
+      if (!entryCountElement) {
         chrome.runtime.sendMessage({
           action: MESSAGE_TYPES.PARSE_HTML_RESULT,
           result: {
@@ -51,8 +52,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
         return;
       }
       
-      const title = match[1].trim();
-      const entryCount = match[2];
+      const entryCount = entryCountElement.textContent.trim();
       
       chrome.runtime.sendMessage({
         action: MESSAGE_TYPES.PARSE_HTML_RESULT,
@@ -87,12 +87,13 @@ async function fetchTopicTitles() {
   return Array.from(titleElements)
     .filter(a => !a.closest('li[id*="sponsored"]') && !a.closest('li[id*="nativespot"]'))
     .map(a => {
-      const fullText = a.textContent;
-      const match = fullText.match(/(.*?)\s*(\d+)\s*$/);
+      const entryCountElement = a.querySelector('small');
+      const title = a.childNodes[0].textContent.trim();
+      const entryCount = entryCountElement ? entryCountElement.textContent.trim() : '0';
       
       return {
-        title: match ? match[1].trim() : fullText.trim(),
-        entryCount: match ? parseEntryCount(match[2]) : 0,
+        title,
+        entryCount: parseEntryCount(entryCount),
         url: 'https://eksisozluk.com' + a.getAttribute('href').split('?')[0]
       };
     });
