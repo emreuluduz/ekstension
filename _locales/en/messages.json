@@ -4,7 +4,7 @@
         "description": "The name of the extension"
     },
     "extension_description": {
-        "message": "Quick search and topic filtering extension for Ekşi Sözlük",
+        "message": "Advanced tracking and filtering extension for Ekşi Sözlük",
         "description": "The description of the extension"
     },
     "context_menu_search": {
@@ -16,7 +16,7 @@
         "description": "Title of the settings panel"
     },
     "filter_words_label": {
-        "message": "Filter Words",
+        "message": "Blocked Words",
         "description": "Label for filter words input"
     },
     "theme_label": {
@@ -32,7 +32,7 @@
         "description": "Light theme option"
     },
     "filter_input_placeholder": {
-        "message": "add word...",
+        "message": "Enter a word...",
         "description": "Placeholder text for filter input"
     },
     "save_button": {

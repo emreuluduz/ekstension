@@ -1,7 +1,9 @@
-class Storage {
+import { STORAGE_KEYS } from '../../utils/constants.js';
+
+export class Storage {
   static async get(key) {
     return new Promise((resolve) => {
-      chrome.storage.sync.get([key], (result) => {
+      chrome.storage.sync.get(key, (result) => {
         resolve(result[key]);
       });
     });
@@ -14,51 +16,51 @@ class Storage {
   }
 
   static async getFavorites() {
-    return await this.get('favorites') || [];
+    return await this.get(STORAGE_KEYS.FAVORITES) || [];
   }
 
-  static async addFavorite(title) {
+  static async getFollowing() {
+    return await this.get(STORAGE_KEYS.FOLLOWING) || [];
+  }
+
+  static async addFavorite(topic) {
     const favorites = await this.getFavorites();
-    if (!favorites.find(f => f.url === title.url)) {
-      favorites.push(title);
-      await this.set('favorites', favorites);
+    const exists = favorites.some(f => f.url === topic.url);
+    if (!exists) {
+      favorites.push(topic);
+      await this.set(STORAGE_KEYS.FAVORITES, favorites);
     }
+    return !exists;
   }
 
   static async removeFavorite(url) {
     const favorites = await this.getFavorites();
-    await this.set('favorites', favorites.filter(f => f.url !== url));
+    const filtered = favorites.filter(f => f.url !== url);
+    await this.set(STORAGE_KEYS.FAVORITES, filtered);
   }
 
-  static async getFollowing() {
-    return await this.get('following') || [];
-  }
-
-  static async addFollowing(title) {
+  static async addFollowing(topic) {
     const following = await this.getFollowing();
-    if (!following.find(f => f.url === title.url)) {
-      following.push({
-        ...title,
-        lastChecked: Date.now(),
-        lastEntryCount: title.entryCount
-      });
-      await this.set('following', following);
+    const exists = following.some(f => f.url === topic.url);
+    if (!exists) {
+      following.push(topic);
+      await this.set(STORAGE_KEYS.FOLLOWING, following);
     }
+    return !exists;
   }
 
   static async removeFollowing(url) {
     const following = await this.getFollowing();
-    await this.set('following', following.filter(f => f.url !== url));
+    const filtered = following.filter(f => f.url !== url);
+    await this.set(STORAGE_KEYS.FOLLOWING, filtered);
   }
 
-  static async exportData() {
-    const data = await chrome.storage.sync.get(null);
-    return JSON.stringify(data);
-  }
-
-  static async importData(jsonData) {
-    const data = JSON.parse(jsonData);
-    await chrome.storage.sync.clear();
-    await chrome.storage.sync.set(data);
+  static async updateFollowing(topic) {
+    const following = await this.getFollowing();
+    const index = following.findIndex(f => f.url === topic.url);
+    if (index !== -1) {
+      following[index] = topic;
+      await this.set(STORAGE_KEYS.FOLLOWING, following);
+    }
   }
 } 

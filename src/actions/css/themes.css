@@ -41,6 +41,7 @@ body[data-theme="light"] {
   --theme-selected-bg: var(--light-theme-selected-bg);
   --theme-selected-border: var(--light-theme-selected-border);
   --theme-selected-text: var(--light-theme-selected-text);
+  --active-icon: #1976d2;
 }
 
 body[data-theme="dark"] {
@@ -56,4 +57,5 @@ body[data-theme="dark"] {
   --theme-selected-bg: var(--dark-theme-selected-bg);
   --theme-selected-border: var(--dark-theme-selected-border);
   --theme-selected-text: var(--dark-theme-selected-text);
+  --active-icon: #2196f3;
 } 

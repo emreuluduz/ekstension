@@ -358,15 +358,16 @@ body {
 
 .dropdown-menu {
     position: absolute;
-    right: 8px;
+    right: 0;
     top: 100%;
     background: var(--surface);
-    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    padding: 4px 0;
-    z-index: 1000;
-    min-width: 180px;
     display: none;
+    z-index: 1000;
+    min-width: 200px;
+    padding: 4px;
 }
 
 .dropdown-menu.show {
@@ -374,11 +375,12 @@ body {
 }
 
 .dropdown-item {
-    padding: 8px 16px;
     display: flex;
     align-items: center;
     gap: 8px;
+    padding: 8px 12px;
     cursor: pointer;
+    border-radius: 4px;
     color: var(--text);
     transition: background-color 0.2s;
 }
@@ -387,32 +389,35 @@ body {
     background: var(--bg);
 }
 
-.dropdown-item .material-icons {
-    font-size: 18px;
-    color: var(--secondary-text);
+.dropdown-item.active {
+    color: var(--button-bg);
 }
 
-.dropdown-item.active .material-icons {
-    color: var(--button-text);
+.dropdown-item .material-icons {
+    font-size: 20px;
+}
+
+.dropdown-item .dropdown-text {
+    font-size: 14px;
 }
 
 .more-btn {
     background: none;
     border: none;
-    padding: 4px;
+    color: var(--text);
     cursor: pointer;
-    color: var(--secondary-text);
+    padding: 4px;
     border-radius: 50%;
-    transition: all 0.2s ease;
-    opacity: 0;
-}
-
-.gundem-item:hover .more-btn {
-    opacity: 1;
+    transition: background-color 0.2s;
+    position: relative;
 }
 
 .more-btn:hover {
-    background: rgba(0,0,0,0.05);
+    background: var(--bg);
+}
+
+.more-btn .material-icons {
+    font-size: 20px;
 }
 
 .theme-selector {
@@ -678,4 +683,52 @@ input:checked + .slider:before {
 .input-with-unit .unit {
     font-size: 14px;
     color: var(--secondary-text);
+}
+
+/* Filter tags */
+.filter-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.filter-tag {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    font-size: 13px;
+}
+
+.filter-tag .remove {
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--text);
+    opacity: 0.6;
+}
+
+.filter-tag .remove:hover {
+    opacity: 1;
+}
+
+/* Add filter button */
+#add-filter-btn {
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 4px;
+    cursor: pointer;
+}
+
+#add-filter-btn:hover {
+    background: var(--bg);
+}
+
+#add-filter-btn .material-icons {
+    font-size: 20px;
 } 

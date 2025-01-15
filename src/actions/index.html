@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/themes.css">
+    <script type="module" src="js/popup.js"></script>
 </head>
 
 <body>
@@ -55,7 +56,7 @@
                 </div>
                 <div class="filter-words">
                     <div class="filter-header">
-                        <label data-i18n="filter_words_label">Filtrelenecek Kelimeler</label>
+                        <label data-i18n="filter_words_label"></label>
                         <div class="filter-input-container">
                             <input type="text" id="filter-input" data-i18n-placeholder="filter_input_placeholder">
                             <button id="add-filter-btn" class="icon-button">
@@ -87,11 +88,11 @@
             
             <div class="tab-content" data-tab="notifications">
                 <div class="settings-group">
-                    <label data-i18n="notification_settings_label">Bildirim Ayarları</label>
+                    <label data-i18n="notification_settings_label"></label>
                     <div class="notification-settings">
                         <div class="setting-item">
                             <label class="setting-label">
-                                <span data-i18n="notifications_enabled">Bildirimleri Aç</span>
+                                <span data-i18n="notifications_enabled"></span>
                                 <div class="setting-control">
                                     <label class="switch">
                                         <input type="checkbox" id="notifications-enabled">
@@ -102,7 +103,7 @@
                         </div>
                         <div class="setting-item">
                             <label class="setting-label">
-                                <span data-i18n="check_interval">Kontrol Sıklığı</span>
+                                <span data-i18n="check_interval"></span>
                                 <div class="setting-control">
                                     <div class="input-with-unit">
                                         <input type="number" id="check-interval" min="1" max="60" value="1">
@@ -120,9 +121,6 @@
     <div class="version">
         <span id="version-text">v1.0.0</span>
     </div>
-    <script src="js/storage.js"></script>
-    <script src="js/cache.js"></script>
-    <script src="js/popup.js"></script>
 </body>
 
 </html>

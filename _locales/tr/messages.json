@@ -8,7 +8,7 @@
         "description": "Popup başlığı"
     },
     "extension_description": {
-        "message": "Ekşi Sözlük için hızlı arama ve başlık filtreleme eklentisi",
+        "message": "Ekşi Sözlük için gelişmiş takip ve filtreleme eklentisi",
         "description": "Eklentinin açıklaması"
     },
     "context_menu_search": {
@@ -20,7 +20,7 @@
         "description": "Ayarlar paneli başlığı"
     },
     "filter_words_label": {
-        "message": "Filtrelenecek Kelimeler",
+        "message": "Engellenen Kelimeler",
         "description": "Filtre kelimeleri girişi etiketi"
     },
     "theme_label": {
@@ -32,7 +32,7 @@
         "description": "Otomatik tema seçeneği"
     },
     "filter_input_placeholder": {
-        "message": "kelime ekle...",
+        "message": "Kelime girin...",
         "description": "Filtre girişi için placeholder metni"
     },
     "save_button": {
