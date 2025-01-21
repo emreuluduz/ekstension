@@ -74,6 +74,62 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       });
     }
   }
+
+  if (message.action === MESSAGE_TYPES.PARSE_SEARCH_RESULTS) {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(message.html, 'text/html');
+      
+      // #content-body içeriğini kontrol et
+      const contentBody = doc.querySelector('#content-body');
+      if (contentBody && contentBody.textContent.includes('başlık yok')) {
+        chrome.runtime.sendMessage({
+          action: MESSAGE_TYPES.PARSE_SEARCH_RESULTS_RESPONSE,
+          result: {
+            success: true,
+            hasNoResults: true,
+            titles: []
+          }
+        });
+        return;
+      }
+      
+      // Başlıkları topla
+      const titles = Array.from(doc.querySelectorAll('#content-body h1 a'))
+        .map(a => {
+          const href = a.getAttribute('href');
+          // URL'yi düzelt
+          const fullUrl = href.startsWith('/') 
+            ? `https://eksisozluk.com${href}`
+            : href.startsWith('http') 
+              ? href 
+              : `https://eksisozluk.com/${href}`;
+            
+          return {
+            Title: a.textContent.trim(),
+            Url: fullUrl
+          };
+        });
+
+      chrome.runtime.sendMessage({
+        action: MESSAGE_TYPES.PARSE_SEARCH_RESULTS_RESPONSE,
+        result: {
+          success: true,
+          hasNoResults: false,
+          titles
+        }
+      });
+    } catch (error) {
+      console.error('Search results parse error:', error);
+      chrome.runtime.sendMessage({
+        action: MESSAGE_TYPES.PARSE_SEARCH_RESULTS_RESPONSE,
+        result: {
+          success: false,
+          error: error.message
+        }
+      });
+    }
+  }
 });
 
 async function fetchTopicTitles() {

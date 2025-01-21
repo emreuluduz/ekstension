@@ -5,15 +5,21 @@
     "version": "1.0.0",
     "default_locale": "tr",
     "permissions": [
-        "contextMenus",
-        "scripting",
         "storage",
+        "contextMenus",
         "notifications",
         "alarms",
+        "scripting",
+        "tabs",
         "offscreen"
     ],
     "host_permissions": [
-        "https://eksisozluk.com/*"
+        "https://eksisozluk.com/*",
+        "https://*.youtube.com/*",
+        "https://*.wikipedia.org/*",
+        "https://*.imdb.com/*",
+        "https://*.steampowered.com/*",
+        "https://*.epicgames.com/*"
     ],
     "action": {
         "default_popup": "src/actions/index.html",
@@ -37,17 +43,30 @@
             "src/utils/*.js",
             "src/actions/js/*.js",
             "src/background/*.js",
-            "src/content/*.js"
+            "src/content/*.js",
+            "icons/sites/*.png",
+            "icons/*"
         ],
         "matches": ["<all_urls>"]
     }],
-    "content_scripts": [{
-        "matches": ["*://*.eksisozluk.com/*"],
-        "js": [
-            "src/content/content-constants.js",
-            "src/content/content-storage.js",
-            "src/content/filter.js"
-        ],
-        "run_at": "document_end"
-    }]
+    "content_scripts": [
+        {
+            "matches": ["*://*.eksisozluk.com/*"],
+            "js": [
+                "src/content/filter.js"
+            ],
+            "run_at": "document_end"
+        },
+        {
+            "matches": [
+                "https://*.youtube.com/*",
+                "https://*.wikipedia.org/*",
+                "https://*.imdb.com/*",
+                "https://*.steampowered.com/*",
+                "https://*.epicgames.com/*"
+            ],
+            "css": ["src/content/content.css"],
+            "js": ["src/content/content.js"]
+        }
+    ]
 }

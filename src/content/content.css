@@ -1,0 +1,47 @@
+.eksi-sticky-icon {
+  position: fixed;
+  right: 0;
+  top: 25%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  background: rgb(27, 123, 0);
+  border-radius: 50% 0 0 50%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  cursor: pointer;
+  z-index: 999999;
+  display: none;
+  transition: all 0.3s ease;
+  pointer-events: auto !important;
+}
+
+.eksi-sticky-icon.show {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.eksi-sticky-icon:hover {
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: -4px 0 12px rgba(0,0,0,0.3);
+  padding-right: 5px;
+}
+
+.eksi-sticky-icon img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.eksi-notification-dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  background: #4CAF50;
+  border-radius: 50%;
+  border: 2px solid white;
+  pointer-events: none;
+} 

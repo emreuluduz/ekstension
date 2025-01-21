@@ -1,6 +1,7 @@
 import { CACHE_KEYS, STORAGE_KEYS } from '../../utils/constants.js';
 import { Storage } from './storage.js';
 import { Topics } from './topics.js';
+import { Search } from './search.js';
 
 export const UI = {
   elements: {
@@ -48,7 +49,7 @@ export const UI = {
           <span class="material-icons">more_vert</span>
         </button>
         <div class="dropdown-menu">
-          <div class="dropdown-item ${isFavorite ? 'active' : ''}" data-action="favorite">
+          <div class="dropdown-item ${isFavorite ? 'active' : ''}" data-action="favorite" data-url="${item.url}" data-title="${item.title}">
             <span class="material-icons" style="color: ${isFavorite ? 'var(--active-icon)' : 'var(--text)'}">
               ${isFavorite ? 'star' : 'star_outline'}
             </span>
@@ -56,7 +57,7 @@ export const UI = {
               ${isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
             </span>
           </div>
-          <div class="dropdown-item ${isFollowing ? 'active' : ''}" data-action="follow">
+          <div class="dropdown-item ${isFollowing ? 'active' : ''}" data-action="follow" data-url="${item.url}" data-title="${item.title}">
             <span class="material-icons" style="color: ${isFollowing ? 'var(--active-icon)' : 'var(--text)'}">
               ${isFollowing ? 'notifications' : 'notifications_none'}
             </span>
@@ -143,6 +144,13 @@ export const UI = {
   },
 
   attachTopicListeners() {
+    // Önce tüm event listener'ları temizle
+    document.querySelectorAll('.gundem-item').forEach(item => {
+      const clone = item.cloneNode(true);
+      item.parentNode.replaceChild(clone, item);
+    });
+
+    // Yeni event listener'ları ekle
     document.querySelectorAll('.gundem-item').forEach(item => {
       // Başlığa tıklama
       item.addEventListener('click', (e) => {
@@ -160,6 +168,12 @@ export const UI = {
       if (moreBtn && dropdownMenu) {
         moreBtn.addEventListener('click', (e) => {
           e.stopPropagation();
+          // Önce tüm açık menüleri kapat
+          document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+            if (menu !== dropdownMenu) {
+              menu.classList.remove('show');
+            }
+          });
           dropdownMenu.classList.toggle('show');
         });
       }
@@ -169,40 +183,56 @@ export const UI = {
         dropdownItem.addEventListener('click', async (e) => {
           e.stopPropagation();
           const action = dropdownItem.dataset.action;
-          const url = item.dataset.url;
-          const title = await Topics.getTopicByUrl(url);
+          const url = dropdownItem.dataset.url;
+          const title = dropdownItem.dataset.title;
           
           if (action === 'favorite') {
             if (dropdownItem.classList.contains('active')) {
               await Topics.removeFromFavorites(url);
-              dropdownItem.classList.remove('active');
             } else {
-              await Topics.addToFavorites(title);
-              dropdownItem.classList.add('active');
+              await Topics.addToFavorites({ title, url });
             }
           } else if (action === 'follow') {
             if (dropdownItem.classList.contains('active')) {
               await Topics.removeFromFollowing(url);
-              dropdownItem.classList.remove('active');
             } else {
-              await Topics.addToFollowing(title);
-              dropdownItem.classList.add('active');
+              await Topics.addToFollowing({ title, url });
             }
           }
           
           dropdownMenu.classList.remove('show');
+
+          // Gündem listesini yeniden render et
+          const favorites = await Storage.getFavorites();
+          const following = await Storage.getFollowing();
+          
+          // Arama sonuçlarını yeniden render et
+          const results = await Storage.get(STORAGE_KEYS.CURRENT_SEARCH_RESULTS);
+          if (results) {
+            await Search.displayResults(results);
+          }
+          
+          // Gündem listesini yeniden render et
+          if (Topics.cachedTopics) {
+            await this.renderTopics(Topics.cachedTopics, favorites, following);
+          }
         });
       });
     });
 
     // Sayfa tıklamalarında açık menüleri kapat
-    document.addEventListener('click', (e) => {
+    const handleClickOutside = (e) => {
       if (!e.target.closest('.dropdown-menu') && !e.target.closest('.more-btn')) {
         document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
           menu.classList.remove('show');
         });
       }
-    });
+    };
+
+    // Önce eski event listener'ı kaldır
+    document.removeEventListener('click', handleClickOutside);
+    // Yeni event listener'ı ekle
+    document.addEventListener('click', handleClickOutside);
   },
 
   attachListListeners() {

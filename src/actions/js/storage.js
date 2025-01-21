@@ -1,29 +1,32 @@
 import { STORAGE_KEYS } from '../../utils/constants.js';
 
-export class Storage {
-  static async get(key) {
-    return new Promise((resolve) => {
-      chrome.storage.sync.get(key, (result) => {
-        resolve(result[key]);
-      });
-    });
-  }
+export const Storage = {
+  async get(key) {
+    const result = await chrome.storage.local.get(key);
+    return result[key];
+  },
 
-  static async set(key, value) {
-    return new Promise((resolve) => {
-      chrome.storage.sync.set({ [key]: value }, resolve);
-    });
-  }
+  async set(key, value) {
+    await chrome.storage.local.set({ [key]: value });
+  },
 
-  static async getFavorites() {
+  async remove(key) {
+    await chrome.storage.local.remove(key);
+  },
+
+  async clear() {
+    await chrome.storage.local.clear();
+  },
+
+  async getFavorites() {
     return await this.get(STORAGE_KEYS.FAVORITES) || [];
-  }
+  },
 
-  static async getFollowing() {
+  async getFollowing() {
     return await this.get(STORAGE_KEYS.FOLLOWING) || [];
-  }
+  },
 
-  static async addFavorite(topic) {
+  async addFavorite(topic) {
     const favorites = await this.getFavorites();
     const exists = favorites.some(f => f.url === topic.url);
     if (!exists) {
@@ -31,15 +34,15 @@ export class Storage {
       await this.set(STORAGE_KEYS.FAVORITES, favorites);
     }
     return !exists;
-  }
+  },
 
-  static async removeFavorite(url) {
+  async removeFavorite(url) {
     const favorites = await this.getFavorites();
     const filtered = favorites.filter(f => f.url !== url);
     await this.set(STORAGE_KEYS.FAVORITES, filtered);
-  }
+  },
 
-  static async addFollowing(topic) {
+  async addFollowing(topic) {
     const following = await this.getFollowing();
     const exists = following.some(f => f.url === topic.url);
     if (!exists) {
@@ -47,15 +50,15 @@ export class Storage {
       await this.set(STORAGE_KEYS.FOLLOWING, following);
     }
     return !exists;
-  }
+  },
 
-  static async removeFollowing(url) {
+  async removeFollowing(url) {
     const following = await this.getFollowing();
     const filtered = following.filter(f => f.url !== url);
     await this.set(STORAGE_KEYS.FOLLOWING, filtered);
-  }
+  },
 
-  static async updateFollowing(topic) {
+  async updateFollowing(topic) {
     const following = await this.getFollowing();
     const index = following.findIndex(f => f.url === topic.url);
     if (index !== -1) {
@@ -63,4 +66,4 @@ export class Storage {
       await this.set(STORAGE_KEYS.FOLLOWING, following);
     }
   }
-} 
+};
