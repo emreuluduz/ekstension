@@ -87,7 +87,7 @@ export const Topics = {
     const newTopic = {
       ...topic,
       lastChecked: Date.now(),
-      lastEntryCount: parseInt(topic.entryCount)
+      lastEntryCount: parseFloat(topic.entryCount)
     };
 
     const result = await Storage.addFollowing(newTopic);

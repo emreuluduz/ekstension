@@ -1021,4 +1021,125 @@ input:checked + .slider:before {
 /* Dropdown menu z-index fix */
 .results-container .dropdown-menu {
     z-index: 1000;
+}
+
+.match-score {
+    display: flex;
+    align-items: center;
+    background: var(--surface-color);
+    border-radius: 8px;
+    padding: 8px;
+    margin: 4px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.match-score .teams {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.match-score .team {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.match-score .score {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 60px;
+    font-size: 1.2em;
+    font-weight: bold;
+    padding: 8px;
+    background: var(--accent-color);
+    color: var(--on-accent-color);
+    border-radius: 4px;
+}
+
+.match-score .status {
+    font-size: 0.8em;
+    color: var(--secondary-text-color);
+    margin-left: 8px;
+}
+
+.match-score .live {
+    color: #f44336;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Maç skoru stilleri */
+.topic-content .match-score {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    padding: 2px 6px;
+    background: var(--surface-color);
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-weight: bold;
+    color: var(--accent-color);
+    position: relative;
+    cursor: pointer;
+}
+
+/* Tooltip stilleri */
+.topic-content .match-score:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background: var(--tooltip-bg, rgba(0,0,0,0.8));
+    color: var(--tooltip-text, white);
+    border-radius: 4px;
+    font-size: 0.8em;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 4px;
+}
+
+.topic-content .match-score:hover::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: var(--tooltip-bg, rgba(0,0,0,0.8));
+    margin-bottom: -4px;
+}
+
+.topic-content .match-score .status-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    opacity: 0.7;
+}
+
+.topic-content .match-score .status-icon.live {
+    color: #f44336;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Hata durumu için stil */
+.match-score.error {
+    color: var(--error-text);
+    font-size: 0.9em;
 } 

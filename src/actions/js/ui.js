@@ -2,6 +2,43 @@ import { CACHE_KEYS, STORAGE_KEYS } from '../../utils/constants.js';
 import { Storage } from './storage.js';
 import { Topics } from './topics.js';
 import { Search } from './search.js';
+import { footballApi } from '../../utils/footballApi.js';
+import { parseDate } from '../../utils/dateUtils.js';
+import { parseNumber, formatNumber } from '../../utils/helpers.js';
+
+// Status mesajlarını tanımla
+const STATUS_MESSAGES = {
+    // Canlı/Devam Eden Maçlar
+    'LIVE': 'Canlı',
+    '1H': 'İlk Yarı',
+    '2H': 'İkinci Yarı',
+    'ET': 'Uzatma',
+    'P': 'Penaltılar',
+    
+    // Devre Arası/Mola
+    'HT': 'Devre Arası',
+    'BT': 'Mola',
+    
+    // Maç Sonu
+    'FT': 'Maç Sonu',
+    'AET': 'Uzatmalar Sonrası',
+    'PEN': 'Penaltılar Sonrası',
+    
+    // Başlamadı
+    'NS': 'Başlamadı',
+    'TBD': 'Tarih Belirlenmedi',
+    
+    // Ertelendi/İptal
+    'PST': 'Ertelendi',
+    'CANC': 'İptal Edildi',
+    'SUSP': 'Askıya Alındı',
+    'INT': 'Ara Verildi',
+    'ABD': 'Terk Edildi',
+    
+    // Hükmen
+    'AWD': 'Hükmen',
+    'WO': 'Hükmen'
+};
 
 export const UI = {
   elements: {
@@ -35,47 +72,154 @@ export const UI = {
     `;
   },
 
-  createTopicCard(item, favorites, following) {
+  async renderMatchScore(title) {
+    const matchRegex = /(\d{1,2}\s+(?:ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık)\s+\d{4})\s+(.+?)\s+(.+?)\s+maçı/i;
+    const match = title.match(matchRegex);
+    
+    if (match) {
+        const [_, dateStr, homeTeam, awayTeam] = match;
+        const formattedDate = parseDate(dateStr);
+        
+        try {
+            const matches = await footballApi.getMatchesByDate(formattedDate);
+            const score = footballApi.findMatchScore(matches, homeTeam, awayTeam);
+            
+            if (score) {
+                // Maç durumuna göre gösterim
+                let statusIndicator = '';
+                switch(score.status) {
+                    // Canlı/Devam Eden Maçlar
+                    case 'LIVE':
+                    case '1H':
+                    case '2H':
+                    case 'ET':
+                    case 'P':
+                        statusIndicator = '<span class="material-icons status-icon live">radio_button_checked</span>';
+                        break;
+
+                    // Devre Arası/Mola
+                    case 'HT':
+                    case 'BT':
+                        statusIndicator = '<span class="material-icons status-icon">timer</span>';
+                        break;
+
+                    // Maç Sonu
+                    case 'FT':
+                    case 'AET':
+                    case 'PEN':
+                        statusIndicator = '<span class="material-icons status-icon">flag</span>';
+                        break;
+
+                    // Başlamadı
+                    case 'NS':
+                    case 'TBD':
+                        statusIndicator = '<span class="material-icons status-icon">schedule</span>';
+                        break;
+
+                    // Ertelendi/İptal
+                    case 'PST':
+                    case 'CANC':
+                    case 'SUSP':
+                    case 'INT':
+                    case 'ABD':
+                        statusIndicator = '<span class="material-icons status-icon">event_busy</span>';
+                        break;
+
+                    // Hükmen
+                    case 'AWD':
+                    case 'WO':
+                        statusIndicator = '<span class="material-icons status-icon">gavel</span>';
+                        break;
+
+                    default:
+                        statusIndicator = '<span class="material-icons status-icon">sports_soccer</span>';
+                }
+
+                const statusMessage = STATUS_MESSAGES[score.status] || 'Bilinmiyor';
+                const isLive = ['LIVE', '1H', '2H', 'ET', 'P'].includes(score.status);
+
+                return `
+                    <div class="match-score ${isLive ? 'live' : ''}" title="${statusMessage}">
+                        ${statusIndicator}
+                        ${score.home}-${score.away}
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Skor alınamadı:', error);
+        }
+    }
+    return '';
+  },
+
+  async createTopicCard(item, favorites, following) {
     const isFavorite = favorites.some(f => f.url === item.url);
     const isFollowing = following.some(f => f.url === item.url);
-
-    return `
-      <div class="gundem-item" data-url="${item.url}">
-        <div class="topic-content">
-          <span class="entry-count">${item.entryCount}</span>
-          <span class="title">${item.title}</span>
+    
+    // Entry count'u parse et ve formatla
+    const entryCount = parseNumber(item.entryCount);
+    const formattedEntryCount = formatNumber(entryCount);
+    
+    // Başlık HTML'ini oluştur
+    const html = `
+        <div class="gundem-item" data-url="${item.url}">
+            <div class="topic-content">
+                <span class="entry-count">${formattedEntryCount}</span>
+                <span class="title">${item.title}</span>
+                <span class="score-container"></span>
+            </div>
+            <button class="more-btn" data-url="${item.url}">
+                <span class="material-icons">more_vert</span>
+            </button>
+            <div class="dropdown-menu">
+                <div class="dropdown-item ${isFavorite ? 'active' : ''}" data-action="favorite" data-url="${item.url}" data-title="${item.title}">
+                    <span class="material-icons" style="color: ${isFavorite ? 'var(--active-icon)' : 'var(--text)'}">
+                        ${isFavorite ? 'star' : 'star_outline'}
+                    </span>
+                    <span class="dropdown-text">
+                        ${isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+                    </span>
+                </div>
+                <div class="dropdown-item ${isFollowing ? 'active' : ''}" data-action="follow" data-url="${item.url}" data-title="${item.title}">
+                    <span class="material-icons" style="color: ${isFollowing ? 'var(--active-icon)' : 'var(--text)'}">
+                        ${isFollowing ? 'notifications' : 'notifications_none'}
+                    </span>
+                    <span class="dropdown-text">
+                        ${isFollowing ? 'Takibi Bırak' : 'Başlığı Takip Et'}
+                    </span>
+                </div>
+            </div>
         </div>
-        <button class="more-btn" data-url="${item.url}">
-          <span class="material-icons">more_vert</span>
-        </button>
-        <div class="dropdown-menu">
-          <div class="dropdown-item ${isFavorite ? 'active' : ''}" data-action="favorite" data-url="${item.url}" data-title="${item.title}">
-            <span class="material-icons" style="color: ${isFavorite ? 'var(--active-icon)' : 'var(--text)'}">
-              ${isFavorite ? 'star' : 'star_outline'}
-            </span>
-            <span class="dropdown-text">
-              ${isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
-            </span>
-          </div>
-          <div class="dropdown-item ${isFollowing ? 'active' : ''}" data-action="follow" data-url="${item.url}" data-title="${item.title}">
-            <span class="material-icons" style="color: ${isFollowing ? 'var(--active-icon)' : 'var(--text)'}">
-              ${isFollowing ? 'notifications' : 'notifications_none'}
-            </span>
-            <span class="dropdown-text">
-              ${isFollowing ? 'Takibi Bırak' : 'Başlığı Takip Et'}
-            </span>
-          </div>
-        </div>
-      </div>
     `;
+
+    return {
+        html,
+        afterRender: async (element) => {
+            // Skor bilgisini al ve ekle
+            const scoreHtml = await this.renderMatchScore(item.title);
+            if (scoreHtml && element) {
+                const scoreContainer = element.querySelector('.score-container');
+                if (scoreContainer) {
+                    scoreContainer.innerHTML = scoreHtml;
+                }
+            }
+        }
+    };
   },
 
   async renderTopics(titles, favorites, following) {
     const filteredTitles = titles;
-    this.elements.topicsList.innerHTML = filteredTitles.map(item => 
-      this.createTopicCard(item, favorites, following)
-    ).join('');
-
+    const cards = await Promise.all(
+        filteredTitles.map(item => this.createTopicCard(item, favorites, following))
+    );
+    
+    // Önce HTML'i ekle
+    this.elements.topicsList.innerHTML = cards.map(card => card.html).join('');
+    
+    // Sonra her kart için afterRender fonksiyonunu çalıştır
+    const elements = this.elements.topicsList.querySelectorAll('.gundem-item');
+    await Promise.all(cards.map((card, index) => card.afterRender(elements[index])));
+    
     this.attachTopicListeners();
   },
 

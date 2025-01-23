@@ -1,5 +1,5 @@
 import { MESSAGE_TYPES } from '../utils/constants.js';
-import { parseEntryCount } from '../utils/helpers.js';
+import { parseNumber, formatNumber } from '../utils/helpers.js';
 
 // Mesajları dinle
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
@@ -147,52 +147,14 @@ async function fetchTopicTitles() {
       const title = a.childNodes[0].textContent.trim();
       const entryCount = entryCountElement ? entryCountElement.textContent.trim() : '0';
       
+    // Entry count'u parse et ve formatla
+    const entryCountParsed = parseNumber(entryCount);
+    const formattedEntryCount = formatNumber(entryCountParsed);
+
       return {
         title,
-        entryCount: parseEntryCount(entryCount),
+        entryCount: formattedEntryCount,
         url: 'https://eksisozluk.com' + a.getAttribute('href').split('?')[0]
       };
     });
 }
-
-async function parseTopicHtml(html, url) {
-  try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    
-    // URL'den başlık ID'sini al
-    const topicId = url.split('--')[1];
-    
-    // Doğru başlığı bul
-    const titleLink = doc.querySelector(`ul.topic-list > li > a[href*="${topicId}"]`);
-    
-    if (!titleLink) {
-      return {
-        success: false,
-        error: 'Topic not found'
-      };
-    }
-    
-    const fullText = titleLink.textContent.trim();
-    const match = fullText.match(/(.*?)\s*(\d+)\s*$/);
-    
-    if (!match) {
-      return {
-        success: false,
-        error: 'Entry count not found'
-      };
-    }
-    
-    return {
-      success: true,
-      title: match[1].trim(),
-      entryCount: parseEntryCount(match[2]),
-      url: url
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-} 
