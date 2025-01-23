@@ -1142,4 +1142,318 @@ input:checked + .slider:before {
 .match-score.error {
     color: var(--error-text);
     font-size: 0.9em;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+#search-input {
+    width: 100%;
+    padding: 8px 12px 8px 36px;
+    border: 2px solid transparent;
+    border-radius: 20px;
+    background-color: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+#search-input:focus {
+    border-color: var(--accent-color);
+    background-color: var(--surface);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.search-icon {
+    position: absolute;
+    left: 10px;
+    color: var(--secondary-text);
+    font-size: 20px;
+}
+
+.search-clear {
+    position: absolute;
+    right: 10px;
+    color: var(--secondary-text);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    padding: 2px;
+    border-radius: 50%;
+    font-size: 18px;
+}
+
+.search-clear:hover {
+    background-color: var(--hover-color);
+}
+
+#search-input:not(:placeholder-shown) + .search-clear {
+    opacity: 0.7;
+}
+
+/* Search Results Container */
+#search-results-container {
+    margin-top: 8px;
+    background: var(--surface);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.search-section {
+    padding: 12px 16px;
+}
+
+.search-section:not(:last-child) {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.search-section-header {
+    font-size: 12px;
+    color: var(--secondary-text);
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+
+.gundem-item {
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.gundem-item:hover {
+    background-color: var(--hover-color);
+    transform: translateX(4px);
+}
+
+.search-error {
+    padding: 24px;
+    text-align: center;
+    color: var(--secondary-text);
+    font-size: 14px;
+}
+
+/* Loading indicator */
+.search-loading {
+    display: none;
+    position: absolute;
+    right: 10px;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--accent-color);
+    border-radius: 50%;
+    animation: search-spin 0.8s linear infinite;
+}
+
+.searching .search-loading {
+    display: block;
+}
+
+@keyframes search-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Search Panel Styles */
+.search-panel {
+    background: var(--surface);
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 8px;
+    z-index: 900;
+    margin: 8px;
+    transition: all 0.3s ease;
+}
+
+.search-panel.hidden {
+    display: none;
+}
+
+.search-panel h2 {
+    font-size: 16px;
+    margin-bottom: 16px;
+    color: var(--text);
+    position: relative;
+    z-index: 901;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+#search-input {
+    width: 100%;
+    padding: 10px 12px 10px 36px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+#search-input:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.search-icon {
+    position: absolute;
+    left: 10px;
+    color: var(--secondary-text);
+    font-size: 20px;
+}
+
+.search-clear {
+    position: absolute;
+    right: 10px;
+    color: var(--secondary-text);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    padding: 4px;
+    border-radius: 50%;
+}
+
+.search-clear:hover {
+    background-color: var(--hover-color);
+}
+
+#search-input:not(:placeholder-shown) + .search-clear {
+    opacity: 0.7;
+}
+
+/* Search Results Styles */
+#search-results-container {
+    margin-top: 8px;
+}
+
+.search-section {
+    margin-bottom: 16px;
+}
+
+.search-section-header {
+    font-size: 12px;
+    color: var(--secondary-text);
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+
+.search-section .gundem-item {
+    padding: 12px;
+    margin-bottom: 4px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.search-section .gundem-item:hover {
+    background-color: var(--hover-color);
+    transform: translateX(4px);
+}
+
+/* Loading indicator */
+.search-loading {
+    display: none;
+    position: absolute;
+    right: 40px;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--accent-color);
+    border-radius: 50%;
+    animation: search-spin 0.8s linear infinite;
+}
+
+.searching .search-loading {
+    display: block;
+}
+
+@keyframes search-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Header action buttons */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.header-actions button {
+    background: none;
+    border: none;
+    color: var(--header-text);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.header-actions button:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+/* Eski search-button stilini kaldır */
+.search-button {
+    position: absolute;
+    right: 96px; /* settings-button'dan 40px daha solda */
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--header-text);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.search-button:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+/* Header'daki butonların ortak stilleri */
+.header .search-button,
+.header .settings-button,
+.header .refresh-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--header-text);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.header .search-button { right: 96px; }
+.header .settings-button { right: 56px; }
+.header .refresh-button { right: 16px; }
+
+.header .search-button:hover,
+.header .settings-button:hover,
+.header .refresh-button:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.search-loading-text {
+    padding: 24px;
+    text-align: center;
+    color: var(--secondary-text);
+    font-size: 14px;
 } 

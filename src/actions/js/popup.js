@@ -206,6 +206,221 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (results) {
     Search.displayResults(results);
   }
+
+  const searchBtn = document.getElementById('search-btn');
+  const searchPanel = document.getElementById('search-panel');
+  const searchInput = document.getElementById('search-input');
+  const searchClear = document.querySelector('.search-clear');
+  let searchTimeout = null;
+
+  // Clear button functionality
+  searchClear.addEventListener('click', () => {
+    searchInput.value = '';
+    searchInput.focus();
+    // Trigger input event to update UI
+    searchInput.dispatchEvent(new Event('input'));
+  });
+
+  searchBtn.addEventListener('click', () => {
+    const settingsPanel = document.getElementById('settings-panel');
+    settingsPanel.classList.add('hidden'); // Ayarlar panelini kapat
+    searchPanel.classList.toggle('hidden');
+    if (!searchPanel.classList.contains('hidden')) {
+        searchInput.focus();
+    } else {
+        // Arama paneli kapanınca sonuçları temizle ve gündem listesini göster
+        const searchResultsContainer = document.getElementById('search-results-container');
+        if (searchResultsContainer) {
+            searchResultsContainer.innerHTML = '';
+        }
+        document.getElementById('gundem-list').style.display = 'block';
+    }
+  });
+
+  // Settings butonu için de arama panelini kapatma ekleyelim
+  document.getElementById('settings-btn').addEventListener('click', () => {
+    searchPanel.classList.add('hidden');
+    // ... existing settings button code ...
+  });
+
+  searchInput.addEventListener('input', (e) => {
+    const searchText = e.target.value.trim();
+    const gundemList = document.getElementById('gundem-list');
+    const searchResultsContainer = document.getElementById('search-results-container');
+    
+    // Clear previous timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    // If search text is empty, show gundem list and remove search results
+    if (searchText.length === 0) {
+      if (searchResultsContainer) {
+        searchResultsContainer.remove();
+      }
+      gundemList.style.display = 'block';
+      return;
+    }
+
+    // Add debounce to prevent too many requests
+    searchTimeout = setTimeout(() => {
+      performSearch(searchText);
+    }, 300);
+  });
+
+  // Close search when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!searchPanel.contains(e.target) && !searchBtn.contains(e.target)) {
+      searchPanel.classList.add('hidden');
+      // Arama paneli kapanınca sonuçları temizle ve gündem listesini göster
+      const searchResultsContainer = document.getElementById('search-results-container');
+      if (searchResultsContainer) {
+        searchResultsContainer.innerHTML = '';
+      }
+      document.getElementById('gundem-list').style.display = 'block';
+    }
+  });
+
+  // Show loading state during search
+  async function performSearch(searchText) {
+    try {
+      searchPanel.classList.add('searching');
+      
+      // Önceki arama sonuçlarını temizle
+      const searchResultsContainer = document.getElementById('search-results-container');
+      if (searchResultsContainer) {
+        searchResultsContainer.innerHTML = `
+          <div class="search-loading-text">
+            Aranıyor...
+          </div>
+        `;
+      }
+
+      // İsteği gönder ve cevabı bekle
+      chrome.runtime.sendMessage({
+        action: 'performSearch',
+        searchText: searchText
+      });
+
+    } catch (error) {
+      console.error('Search error:', error);
+      const searchResultsContainer = document.getElementById('search-results-container');
+      if (searchResultsContainer) {
+        searchResultsContainer.innerHTML = `
+          <div class="search-error">
+            Arama yapılırken bir hata oluştu
+          </div>
+        `;
+      }
+    } finally {
+      // Loading state'i kaldır
+      setTimeout(() => {
+        if (document.body.contains(searchPanel)) { // Panel hala DOM'da mı kontrol et
+          searchPanel.classList.remove('searching');
+        }
+      }, 300);
+    }
+  }
+
+  // Yeni bir fonksiyon olarak tanımla
+  function handleSearchResults(message) {
+    if (message.action === 'searchResults') {
+      displaySearchResults(message.results);
+    } else if (message.action === 'searchError') {
+      console.error('Search error:', message.error);
+      const searchResultsContainer = document.getElementById('search-results-container');
+      if (searchResultsContainer) {
+        searchResultsContainer.innerHTML = `
+          <div class="search-error">
+            Arama yapılırken bir hata oluştu
+          </div>
+        `;
+      }
+    }
+  }
+
+  // Global message listener'a ekle
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'searchResults' || message.action === 'searchError') {
+      handleSearchResults(message);
+    }
+  });
+
+  function displaySearchResults(results) {
+    const gundemList = document.getElementById('gundem-list');
+    const content = document.querySelector('.content');
+    
+    // Önce eski arama sonuçlarını temizle
+    let searchResultsContainer = document.getElementById('search-results-container');
+    if (searchResultsContainer) {
+      searchResultsContainer.remove();
+    }
+
+    // Yeni sonuçlar container'ı oluştur
+    searchResultsContainer = document.createElement('div');
+    searchResultsContainer.id = 'search-results-container';
+    searchResultsContainer.className = 'results-container';
+    
+    if (results && (results.Titles?.length > 0 || results.Nicks?.length > 0)) {
+      // Başlıkları göster
+      if (results.Titles?.length > 0) {
+        const titlesSection = document.createElement('div');
+        titlesSection.className = 'search-section';
+        titlesSection.innerHTML = '<div class="search-section-header">Başlıklar</div>';
+        
+        results.Titles.forEach(title => {
+          const resultItem = document.createElement('div');
+          resultItem.className = 'gundem-item';
+          resultItem.innerHTML = `
+            <div class="topic-content">
+              <span class="title">${title}</span>
+            </div>
+          `;
+          resultItem.addEventListener('click', () => {
+            const query = title.toLowerCase();
+            window.open(`https://eksisozluk.com/?q=${encodeURIComponent(query)}`, '_blank');
+          });
+          titlesSection.appendChild(resultItem);
+        });
+        searchResultsContainer.appendChild(titlesSection);
+      }
+
+      // Yazarları göster
+      if (results.Nicks?.length > 0) {
+        const nicksSection = document.createElement('div');
+        nicksSection.className = 'search-section';
+        nicksSection.innerHTML = '<div class="search-section-header">Yazarlar</div>';
+        
+        results.Nicks.forEach(nick => {
+          const resultItem = document.createElement('div');
+          resultItem.className = 'gundem-item';
+          resultItem.innerHTML = `
+            <div class="topic-content">
+              <span class="title">${nick}</span>
+            </div>
+          `;
+          resultItem.addEventListener('click', () => {
+            window.open(`https://eksisozluk.com/biri/${nick}`, '_blank');
+          });
+          nicksSection.appendChild(resultItem);
+        });
+        searchResultsContainer.appendChild(nicksSection);
+      }
+
+      // Gündem listesini gizle ve arama sonuçlarını göster
+      gundemList.style.display = 'none';
+      content.insertBefore(searchResultsContainer, gundemList);
+    } else {
+      // Sonuç yoksa "sonuç bulunamadı" mesajı göster
+      searchResultsContainer.innerHTML = `
+        <div class="search-error">
+          Sonuç bulunamadı
+        </div>
+      `;
+      gundemList.style.display = 'none';
+      content.insertBefore(searchResultsContainer, gundemList);
+    }
+  }
 });
 
 // Listen for Ekşi results

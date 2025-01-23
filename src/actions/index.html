@@ -16,12 +16,27 @@
             <span class="material-icons">trending_up</span>
             <span data-i18n="header_title"></span>
         </h1>
-        <button class="settings-button" id="settings-btn">
-            <span class="material-icons">settings</span>
-        </button>
-        <button class="refresh-button" id="refresh-btn">
-            <span class="material-icons">refresh</span>
-        </button>
+        <div class="header-actions">
+            <button class="search-button" id="search-btn">
+                <span class="material-icons">search</span>
+            </button>
+            <button class="settings-button" id="settings-btn">
+                <span class="material-icons">settings</span>
+            </button>
+            <button class="refresh-button" id="refresh-btn">
+                <span class="material-icons">refresh</span>
+            </button>
+        </div>
+    </div>
+    <div id="search-panel" class="search-panel hidden">
+        <h2>Ara</h2>
+        <div class="search-input-wrapper">
+            <span class="material-icons search-icon">search</span>
+            <input type="text" id="search-input" placeholder="Başlık veya yazar ara..." autocomplete="off">
+            <span class="material-icons search-clear">close</span>
+            <div class="search-loading"></div>
+        </div>
+        <div id="search-results-container"></div>
     </div>
     <div class="content">
         <div id="settings-panel" class="settings-panel hidden">

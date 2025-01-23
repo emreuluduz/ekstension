@@ -227,6 +227,58 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'openPopup') {
     chrome.action.openPopup();
   }
+
+  if (message.action === 'performSearch') {
+    // Fetch işlemini promise chain içinde yap
+    (async () => {
+      try {
+        const searchText = message.searchText;
+        const timestamp = Date.now();
+        
+        const response = await fetch(
+          `https://eksisozluk.com/autocomplete/query?q=${encodeURIComponent(searchText)}&_=${timestamp}`,
+          {
+            headers: {
+              'Accept': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              'Referer': 'https://eksisozluk.com/'
+            }
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Search request failed');
+        }
+
+        const data = await response.json();
+        
+        // Popup hala açık mı kontrol et
+        try {
+          await chrome.runtime.sendMessage({
+            action: 'searchResults',
+            results: data
+          });
+        } catch (err) {
+          // Popup kapanmışsa hata mesajını görmezden gel
+          console.log('Popup closed, search results not delivered');
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        try {
+          await chrome.runtime.sendMessage({
+            action: 'searchError',
+            error: error.message
+          });
+        } catch (err) {
+          // Popup kapanmışsa hata mesajını görmezden gel
+          console.log('Popup closed, error not delivered');
+        }
+      }
+    })();
+
+    // Asenkron işlem için true döndür
+    return true;
+  }
 });
 
 // Bildirimleri başlat
