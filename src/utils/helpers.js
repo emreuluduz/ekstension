@@ -58,4 +58,12 @@ export function formatNumber(num) {
         return (num / 1000).toFixed(1).replace('.', ',') + 'b';
     }
     return num.toString();
+}
+
+// Türkçe karakterleri doğru şekilde lowercase yapan fonksiyon
+export function turkishToLower(str) {
+    return str
+        .replace(/İ/g, 'i')
+        .replace(/I/g, 'ı')
+        .toLowerCase();
 } 

@@ -1,4 +1,4 @@
-const CACHE_DURATION = 60 * 60 * 1000 / 2; // 30 dk cache süresi
+const CACHE_DURATION = 60000; //60 * 60 * 1000 / 2; // 30 dk cache süresi
 const RATE_LIMIT_DURATION = 60000; // 1 dakika
 const MAX_REQUESTS_PER_DAY = 100;
 const CACHE_KEY = 'football_api_cache';
@@ -44,8 +44,7 @@ class FootballAPI {
 
     // API yanıtını cache'den kontrol eden fonksiyon
     getCachedApiResponse(date) {
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD formatı
-        const cacheKey = `${date}_${today}`; // Tarih ve günü birleştir
+        const cacheKey = date; // Sadece tarihi kullan
         
         const cachedData = this.apiResponseCache.get(cacheKey);
         if (!cachedData) return null;
@@ -84,8 +83,7 @@ class FootballAPI {
     // API'den maç verilerini al
     async getMatchesByDate(date) {
         try {
-            const today = new Date().toISOString().split('T')[0];
-            const cacheKey = `${date}_${today}`;
+            const cacheKey = date;
             
             let matchData = this.getCachedApiResponse(date);
             if (matchData) return matchData;
@@ -173,7 +171,10 @@ class FootballAPI {
 
     // Belirli bir maçın skorunu bul
     findMatchScore(matches, homeTeam, awayTeam) {
-        const match = matches.find(m => {
+        // Matches null ise boş bir array kullan
+        const matchArray = matches || [];
+        
+        const match = matchArray.find(m => {
             const apiHome = m.teams.home.name.toLowerCase();
             const apiAway = m.teams.away.name.toLowerCase();
             const searchHome = this.normalizeTeamName(homeTeam);
@@ -192,11 +193,13 @@ class FootballAPI {
             return homeMatches || awayMatches;
         });
 
-        if (match && match.goals.home !== null) {
+        if (match) {
             return {
                 home: match.goals.home,
                 away: match.goals.away,
-                status: match.fixture.status.short
+                status: match.fixture.status.short,
+                // Maç başlamamışsa saati ekle
+                time: match.fixture.status.short === 'NS' ? match.fixture.date : null
             };
         }
 

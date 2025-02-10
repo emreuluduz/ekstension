@@ -55,8 +55,7 @@ export const SUPPORTED_SITES = {
   EPIC: {
     hostname: 'store.epicgames.com',
     selectors: {
-      title: 'h1[data-testid="game-title"]',
-      description: 'div[data-testid="game-description"]',
+      title: 'h1'
     }
   }
 }; 

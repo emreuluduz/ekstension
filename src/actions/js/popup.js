@@ -3,6 +3,7 @@ import { Topics } from './topics.js';
 import { Storage } from './storage.js';
 import { Search } from './search.js';
 import { STORAGE_KEYS } from '../../utils/constants.js';
+import { turkishToLower } from '../../utils/helpers.js';
 
 export async function displayEksiResults(data) {
   // Önce eski container'ı kaldır
@@ -377,7 +378,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
           `;
           resultItem.addEventListener('click', () => {
-            const query = title.toLowerCase();
+            const query = turkishToLower(title);
             window.open(`https://eksisozluk.com/?q=${encodeURIComponent(query)}`, '_blank');
           });
           titlesSection.appendChild(resultItem);

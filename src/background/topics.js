@@ -1,4 +1,5 @@
 import { MESSAGE_TYPES, SUPPORTED_SITES } from '../utils/constants.js';
+import { turkishToLower } from '../utils/helpers.js';
 
 export const Topics = {
   cachedTitles: [],
@@ -147,7 +148,9 @@ export class SiteAnalyzer {
 
   async searchEksiSozluk(query) {
     try {
-      const encodedQuery = encodeURIComponent(query);
+      // Türkçe karakterleri doğru şekilde lowercase yap
+      const searchQuery = turkishToLower(query);
+      const encodedQuery = encodeURIComponent(searchQuery);
       const url = `https://eksisozluk.com/?q=${encodedQuery}`;
       
       const response = await fetch(url);
@@ -223,7 +226,7 @@ export class SiteAnalyzer {
           for (let i = 0; i < value.length; i += batchSize) {
             const batch = value.slice(i, i + batchSize);
             const batchPromises = batch.map(item => 
-              this.searchEksiSozluk(item.toLowerCase())
+              this.searchEksiSozluk(turkishToLower(item))
                 .then(results => {
                   if (results?.length > 0) {
                     if (!searchResults.has(key)) {
@@ -243,7 +246,7 @@ export class SiteAnalyzer {
           }
         } else {
           searchPromises.push(
-            this.searchEksiSozluk(value.toLowerCase())
+            this.searchEksiSozluk(turkishToLower(value))
               .then(results => {
                 if (results?.length > 0) {
                   searchResults.set(key, [{

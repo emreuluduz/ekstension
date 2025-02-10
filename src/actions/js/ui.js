@@ -85,6 +85,18 @@ export const UI = {
             const score = footballApi.findMatchScore(matches, homeTeam, awayTeam);
             
             if (score) {
+                // Maç başlamamışsa saati göster
+                if (score.status === 'NS' && score.time) {
+                    const matchTime = new Date(score.time);
+                    const timeStr = matchTime.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+                    return `
+                        <div class="match-score" title="Başlamadı">
+                            <span class="material-icons status-icon">schedule</span>
+                            ${timeStr}'de
+                        </div>
+                    `;
+                }
+
                 // Maç durumuna göre gösterim
                 let statusIndicator = '';
                 switch(score.status) {
@@ -141,7 +153,7 @@ export const UI = {
                 return `
                     <div class="match-score ${isLive ? 'live' : ''}" title="${statusMessage}">
                         ${statusIndicator}
-                        ${score.home}-${score.away}
+                        ${score.home !== null ? score.home : '-'}-${score.away !== null ? score.away : '-'}
                     </div>
                 `;
             }
