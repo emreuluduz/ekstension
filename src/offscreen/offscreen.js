@@ -9,9 +9,13 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       chrome.runtime.sendMessage({ 
         action: MESSAGE_TYPES.SET_TOPIC_TITLES, 
         titles 
-      });
+      }).catch(() => {});
     } catch (error) {
       console.error('Fetch error:', error);
+      chrome.runtime.sendMessage({ 
+        action: MESSAGE_TYPES.SET_TOPIC_TITLES, 
+        titles: [] 
+      }).catch(() => {});
     }
   }
   
@@ -20,11 +24,13 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       const parser = new DOMParser();
       const doc = parser.parseFromString(message.html, 'text/html');
       
-      // URL'den başlık ID'sini al
-      const topicId = message.url.split('--')[1];
+      // URL'den başlık ID'sini al (varsa query parametrelerini temizleyerek)
+      const topicId = message.url.split('--')[1]?.split('?')[0];
       
       // Gündem listesinden başlığı bul
-      const titleElement = doc.querySelector(`ul.topic-list > li > a[href*="${topicId}"]`);
+      const titleElement = topicId 
+        ? doc.querySelector(`ul.topic-list > li > a[href*="${topicId}"]`)
+        : null;
       
       if (!titleElement) {
         chrome.runtime.sendMessage({
@@ -133,7 +139,15 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 });
 
 async function fetchTopicTitles() {
-  const response = await fetch('https://eksisozluk.com/basliklar/gundem');
+  const response = await fetch('https://eksisozluk.com/basliklar/gundem', {
+    headers: {
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
   const html = await response.text();
   
   const parser = new DOMParser();
@@ -151,10 +165,15 @@ async function fetchTopicTitles() {
     const entryCountParsed = parseNumber(entryCount);
     const formattedEntryCount = formatNumber(entryCountParsed);
 
+      const href = a.getAttribute('href') || '';
+      const fullUrl = href.startsWith('http')
+        ? href
+        : `https://eksisozluk.com${href.startsWith('/') ? href : '/' + href}`;
+
       return {
         title,
         entryCount: formattedEntryCount,
-        url: 'https://eksisozluk.com' + a.getAttribute('href').split('?')[0]
+        url: fullUrl
       };
     });
 }

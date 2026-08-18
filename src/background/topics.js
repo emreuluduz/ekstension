@@ -7,16 +7,24 @@ export const Topics = {
   async fetch() {
     try {
       await this.createOffscreenDocument();
-      chrome.runtime.sendMessage({ action: MESSAGE_TYPES.FETCH_TOPICS });
       
       const titles = await new Promise((resolve) => {
-        // Offscreen'den gelen mesajı bekle
-        chrome.runtime.onMessage.addListener(function listener(message) {
+        const timeout = setTimeout(() => {
+          chrome.runtime.onMessage.removeListener(listener);
+          resolve([]);
+        }, 5000);
+
+        function listener(message) {
           if (message.action === MESSAGE_TYPES.SET_TOPIC_TITLES) {
+            clearTimeout(timeout);
             chrome.runtime.onMessage.removeListener(listener);
-            resolve(message.titles);
+            resolve(message.titles || []);
           }
-        });
+        }
+
+        // Önce listener'ı ekle, sonra mesajı gönder
+        chrome.runtime.onMessage.addListener(listener);
+        chrome.runtime.sendMessage({ action: MESSAGE_TYPES.FETCH_TOPICS }).catch(() => {});
       });
       
       this.cachedTitles = titles;
@@ -32,23 +40,31 @@ export const Topics = {
       await this.createOffscreenDocument();
       
       return new Promise((resolve) => {
-        chrome.runtime.onMessage.addListener(function listener(message) {
+        const timeout = setTimeout(() => {
+          chrome.runtime.onMessage.removeListener(listener);
+          resolve({ success: false, error: 'Parse timeout' });
+        }, 5000);
+
+        function listener(message) {
           if (message.action === MESSAGE_TYPES.PARSE_HTML_RESULT) {
+            clearTimeout(timeout);
             chrome.runtime.onMessage.removeListener(listener);
             resolve(message.result);
           }
-        });
-        
+        }
+
+        // Önce listener'ı ekle, sonra mesajı gönder
+        chrome.runtime.onMessage.addListener(listener);
         chrome.runtime.sendMessage({
           action: MESSAGE_TYPES.PARSE_HTML,
           html,
           url
-        });
+        }).catch(() => {});
       });
     } catch (error) {
       console.error('Parse error:', error, {
         url,
-        htmlPreview: html.substring(0, 500)
+        htmlPreview: html ? html.substring(0, 500) : ''
       });
       return {
         success: false,
@@ -69,9 +85,14 @@ export const Topics = {
         justification: 'Parse Ekşi Sözlük topics page'
       });
       
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Belgenin hazır olması için kısa bir bekleme
+      await new Promise(resolve => setTimeout(resolve, 150));
       return true;
     } catch (error) {
+      // Zaten varsa hata vermeden devam et
+      if (error.message?.includes('single offscreen')) {
+        return true;
+      }
       console.error('Offscreen document creation error:', error);
       return false;
     }
@@ -85,22 +106,19 @@ export class SiteAnalyzer {
     this.lastRequestTime = 0;
     this.MIN_REQUEST_INTERVAL = 1000;
     this.CACHE_DURATION = 5 * 60 * 1000;
-    this.pendingUrls = new Set(); // İşlem bekleyen URL'leri takip et
+    this.pendingUrls = new Set();
   }
 
   getCurrentSite(url) {
     try {
-      // URL boş veya geçersizse null dön
       if (!url || url === 'about:blank' || url === 'chrome://newtab/') {
         return null;
       }
 
-      // URL'nin geçerli olup olmadığını kontrol et
       let parsedUrl;
       try {
         parsedUrl = new URL(url);
       } catch (e) {
-        console.log('Invalid URL:', url);
         return null;
       }
 
@@ -129,7 +147,6 @@ export class SiteAnalyzer {
         data[key] = element ? element.textContent.trim() : '';
       }
       
-      // YouTube için özel işleme
       if (siteType === 'YOUTUBE') {
         const {mainTitle, attrTitle, attrSubtitle, attrString} = data;
         if (!mainTitle && !attrTitle && !attrSubtitle && !attrString) {
@@ -148,42 +165,42 @@ export class SiteAnalyzer {
 
   async searchEksiSozluk(query) {
     try {
-      // Türkçe karakterleri doğru şekilde lowercase yap
       const searchQuery = turkishToLower(query);
       const encodedQuery = encodeURIComponent(searchQuery);
       const url = `https://eksisozluk.com/?q=${encodedQuery}`;
       
       const response = await fetch(url);
+      if (!response.ok) return null;
       const html = await response.text();
       
-      // Offscreen document kullanarak HTML'i parse et
       await Topics.createOffscreenDocument();
       
       return new Promise((resolve) => {
-        chrome.runtime.onMessage.addListener(function listener(message) {
+        const timeout = setTimeout(() => {
+          chrome.runtime.onMessage.removeListener(listener);
+          resolve(null);
+        }, 5000);
+
+        function listener(message) {
           if (message.action === MESSAGE_TYPES.PARSE_SEARCH_RESULTS_RESPONSE) {
+            clearTimeout(timeout);
             chrome.runtime.onMessage.removeListener(listener);
             
-            if (!message.result.success) {
-              console.error('Parse error:', message.result.error);
-              resolve(null);
-              return;
-            }
-
-            if (message.result.hasNoResults) {
+            if (!message.result?.success || message.result?.hasNoResults) {
               resolve(null);
               return;
             }
 
             resolve(message.result.titles);
           }
-        });
-        
+        }
+
+        chrome.runtime.onMessage.addListener(listener);
         chrome.runtime.sendMessage({
           action: MESSAGE_TYPES.PARSE_SEARCH_RESULTS,
           html,
           url
-        });
+        }).catch(() => {});
       });
 
     } catch (error) {

@@ -1,64 +1,32 @@
-import { CACHE_KEYS, STORAGE_KEYS } from '../../utils/constants.js';
+import { STORAGE_KEYS } from '../../utils/constants.js';
 import { Storage } from './storage.js';
 import { Topics } from './topics.js';
 import { Search } from './search.js';
-import { footballApi } from '../../utils/footballApi.js';
-import { parseDate } from '../../utils/dateUtils.js';
-import { parseNumber, formatNumber } from '../../utils/helpers.js';
-
-// Status mesajlarını tanımla
-const STATUS_MESSAGES = {
-    // Canlı/Devam Eden Maçlar
-    'LIVE': 'Canlı',
-    '1H': 'İlk Yarı',
-    '2H': 'İkinci Yarı',
-    'ET': 'Uzatma',
-    'P': 'Penaltılar',
-    
-    // Devre Arası/Mola
-    'HT': 'Devre Arası',
-    'BT': 'Mola',
-    
-    // Maç Sonu
-    'FT': 'Maç Sonu',
-    'AET': 'Uzatmalar Sonrası',
-    'PEN': 'Penaltılar Sonrası',
-    
-    // Başlamadı
-    'NS': 'Başlamadı',
-    'TBD': 'Tarih Belirlenmedi',
-    
-    // Ertelendi/İptal
-    'PST': 'Ertelendi',
-    'CANC': 'İptal Edildi',
-    'SUSP': 'Askıya Alındı',
-    'INT': 'Ara Verildi',
-    'ABD': 'Terk Edildi',
-    
-    // Hükmen
-    'AWD': 'Hükmen',
-    'WO': 'Hükmen'
-};
+import { parseNumber, formatNumber, escapeHTML } from '../../utils/helpers.js';
 
 export const UI = {
   elements: {
-    topicsList: document.getElementById('gundem-list'),
-    refreshBtn: document.getElementById('refresh-btn'),
-    settingsBtn: document.getElementById('settings-btn'),
-    settingsPanel: document.getElementById('settings-panel'),
-    filterInput: document.getElementById('filter-input'),
-    addFilterBtn: document.getElementById('add-filter-btn'),
-    filterTags: document.getElementById('filter-tags'),
-    versionText: document.getElementById('version-text'),
-    notificationsEnabled: document.getElementById('notifications-enabled'),
-    checkInterval: document.getElementById('check-interval')
+    get topicsList() { return document.getElementById('gundem-list'); },
+    get refreshBtn() { return document.getElementById('refresh-btn'); },
+    get settingsBtn() { return document.getElementById('settings-btn'); },
+    get settingsPanel() { return document.getElementById('settings-panel'); },
+    get filterInput() { return document.getElementById('filter-input'); },
+    get addFilterBtn() { return document.getElementById('add-filter-btn'); },
+    get filterTags() { return document.getElementById('filter-tags'); },
+    get authorFilterInput() { return document.getElementById('author-filter-input'); },
+    get addAuthorFilterBtn() { return document.getElementById('add-author-filter-btn'); },
+    get authorFilterTags() { return document.getElementById('author-filter-tags'); },
+    get exportBackupBtn() { return document.getElementById('export-backup-btn'); },
+    get importBackupBtn() { return document.getElementById('import-backup-btn'); },
+    get importFileInput() { return document.getElementById('import-file-input'); },
+    get versionText() { return document.getElementById('version-text'); }
   },
 
   showLoading() {
     this.elements.topicsList.innerHTML = `
       <div class="loading">
         <span class="material-icons spinner">refresh</span>
-        ${chrome.i18n.getMessage('loading_text')}
+        ${escapeHTML(chrome.i18n.getMessage('loading_text'))}
       </div>
     `;
   },
@@ -67,124 +35,32 @@ export const UI = {
     this.elements.topicsList.innerHTML = `
       <div class="error">
         <span class="material-icons">error_outline</span>
-        ${chrome.i18n.getMessage('error_loading')}
+        ${escapeHTML(chrome.i18n.getMessage('error_loading'))}
       </div>
     `;
   },
 
-  async renderMatchScore(title) {
-    const matchRegex = /(\d{1,2}\s+(?:ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık)\s+\d{4})\s+(.+?)\s+(.+?)\s+maçı/i;
-    const match = title.match(matchRegex);
-    
-    if (match) {
-        const [_, dateStr, homeTeam, awayTeam] = match;
-        const formattedDate = parseDate(dateStr);
-        
-        try {
-            const matches = await footballApi.getMatchesByDate(formattedDate);
-            const score = footballApi.findMatchScore(matches, homeTeam, awayTeam);
-            
-            if (score) {
-                // Maç başlamamışsa saati göster
-                if (score.status === 'NS' && score.time) {
-                    const matchTime = new Date(score.time);
-                    const timeStr = matchTime.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-                    return `
-                        <div class="match-score" title="Başlamadı">
-                            <span class="material-icons status-icon">schedule</span>
-                            ${timeStr}'de
-                        </div>
-                    `;
-                }
-
-                // Maç durumuna göre gösterim
-                let statusIndicator = '';
-                switch(score.status) {
-                    // Canlı/Devam Eden Maçlar
-                    case 'LIVE':
-                    case '1H':
-                    case '2H':
-                    case 'ET':
-                    case 'P':
-                        statusIndicator = '<span class="material-icons status-icon live">radio_button_checked</span>';
-                        break;
-
-                    // Devre Arası/Mola
-                    case 'HT':
-                    case 'BT':
-                        statusIndicator = '<span class="material-icons status-icon">timer</span>';
-                        break;
-
-                    // Maç Sonu
-                    case 'FT':
-                    case 'AET':
-                    case 'PEN':
-                        statusIndicator = '<span class="material-icons status-icon">flag</span>';
-                        break;
-
-                    // Başlamadı
-                    case 'NS':
-                    case 'TBD':
-                        statusIndicator = '<span class="material-icons status-icon">schedule</span>';
-                        break;
-
-                    // Ertelendi/İptal
-                    case 'PST':
-                    case 'CANC':
-                    case 'SUSP':
-                    case 'INT':
-                    case 'ABD':
-                        statusIndicator = '<span class="material-icons status-icon">event_busy</span>';
-                        break;
-
-                    // Hükmen
-                    case 'AWD':
-                    case 'WO':
-                        statusIndicator = '<span class="material-icons status-icon">gavel</span>';
-                        break;
-
-                    default:
-                        statusIndicator = '<span class="material-icons status-icon">sports_soccer</span>';
-                }
-
-                const statusMessage = STATUS_MESSAGES[score.status] || 'Bilinmiyor';
-                const isLive = ['LIVE', '1H', '2H', 'ET', 'P'].includes(score.status);
-
-                return `
-                    <div class="match-score ${isLive ? 'live' : ''}" title="${statusMessage}">
-                        ${statusIndicator}
-                        ${score.home !== null ? score.home : '-'}-${score.away !== null ? score.away : '-'}
-                    </div>
-                `;
-            }
-        } catch (error) {
-            console.error('Skor alınamadı:', error);
-        }
-    }
-    return '';
-  },
-
-  async createTopicCard(item, favorites, following) {
+  createTopicCard(item, favorites) {
     const isFavorite = favorites.some(f => f.url === item.url);
-    const isFollowing = following.some(f => f.url === item.url);
     
     // Entry count'u parse et ve formatla
     const entryCount = parseNumber(item.entryCount);
     const formattedEntryCount = formatNumber(entryCount);
+    const safeTitle = escapeHTML(item.title);
+    const safeUrl = encodeURI(item.url);
     
     // Başlık HTML'ini oluştur
-    const html = `
-        <div class="gundem-item" data-url="${item.url}">
+    return `
+        <div class="gundem-item" data-url="${safeUrl}">
             <div class="topic-content">
-                <span class="entry-count">${formattedEntryCount}</span>
-                <span class="title">${item.title}</span>
-                <span class="score-container"></span>
+                <span class="entry-count">${escapeHTML(formattedEntryCount)}</span>
+                <span class="title">${safeTitle}</span>
             </div>
-            <button class="more-btn" data-url="${item.url}">
+            <button class="more-btn" data-url="${safeUrl}" aria-label="Seçenekler">
                 <span class="material-icons">more_vert</span>
             </button>
             <div class="dropdown-menu">
-                <div class="dropdown-item ${isFavorite ? 'active' : ''}" data-action="favorite" data-url="${item.url}" data-title="${item.title}">
+                <div class="dropdown-item ${isFavorite ? 'active' : ''}" data-action="favorite" data-url="${safeUrl}" data-title="${safeTitle}">
                     <span class="material-icons" style="color: ${isFavorite ? 'var(--active-icon)' : 'var(--text)'}">
                         ${isFavorite ? 'star' : 'star_outline'}
                     </span>
@@ -192,80 +68,50 @@ export const UI = {
                         ${isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
                     </span>
                 </div>
-                <div class="dropdown-item ${isFollowing ? 'active' : ''}" data-action="follow" data-url="${item.url}" data-title="${item.title}">
-                    <span class="material-icons" style="color: ${isFollowing ? 'var(--active-icon)' : 'var(--text)'}">
-                        ${isFollowing ? 'notifications' : 'notifications_none'}
-                    </span>
-                    <span class="dropdown-text">
-                        ${isFollowing ? 'Takibi Bırak' : 'Başlığı Takip Et'}
-                    </span>
-                </div>
             </div>
         </div>
     `;
-
-    return {
-        html,
-        afterRender: async (element) => {
-            // Skor bilgisini al ve ekle
-            const scoreHtml = await this.renderMatchScore(item.title);
-            if (scoreHtml && element) {
-                const scoreContainer = element.querySelector('.score-container');
-                if (scoreContainer) {
-                    scoreContainer.innerHTML = scoreHtml;
-                }
-            }
-        }
-    };
   },
 
-  async renderTopics(titles, favorites, following) {
-    const filteredTitles = titles;
-    const cards = await Promise.all(
-        filteredTitles.map(item => this.createTopicCard(item, favorites, following))
-    );
-    
-    // Önce HTML'i ekle
-    this.elements.topicsList.innerHTML = cards.map(card => card.html).join('');
-    
-    // Sonra her kart için afterRender fonksiyonunu çalıştır
-    const elements = this.elements.topicsList.querySelectorAll('.gundem-item');
-    await Promise.all(cards.map((card, index) => card.afterRender(elements[index])));
-    
+  async renderTopics(titles, favorites) {
+    if (!titles || titles.length === 0) {
+      this.elements.topicsList.innerHTML = `
+        <div class="empty-message">
+          <span class="material-icons" style="font-size: 32px; display: block; margin-bottom: 8px; opacity: 0.4;">filter_list_off</span>
+          <span>Görüntülenecek başlık bulunamadı</span>
+        </div>
+      `;
+      return;
+    }
+    const cardsHtml = titles.map(item => this.createTopicCard(item, favorites)).join('');
+    this.elements.topicsList.innerHTML = cardsHtml;
     this.attachTopicListeners();
   },
 
   async renderLists() {
     const favoritesList = document.getElementById('favorites-list');
-    const followingList = document.getElementById('following-list');
+    if (!favoritesList) return;
     
     const favorites = await Storage.getFavorites();
-    const following = await Storage.getFollowing();
     
     favoritesList.innerHTML = favorites.length ? favorites.map(item => `
-      <div class="list-item" data-url="${item.url}">
-        <span class="title">${item.title}</span>
-        <button class="remove-btn" data-url="${item.url}" data-type="favorite">
+      <div class="list-item" data-url="${encodeURI(item.url)}">
+        <span class="title">${escapeHTML(item.title)}</span>
+        <button class="remove-btn" data-url="${encodeURI(item.url)}" data-type="favorite" aria-label="Sil">
           <span class="material-icons">delete</span>
         </button>
       </div>
-    `).join('') : `<div class="empty-message">${chrome.i18n.getMessage('no_favorites')}</div>`;
-    
-    followingList.innerHTML = following.length ? following.map(item => `
-      <div class="list-item" data-url="${item.url}">
-        <span class="title">${item.title}</span>
-        <button class="remove-btn" data-url="${item.url}" data-type="following">
-          <span class="material-icons">delete</span>
-        </button>
-      </div>
-    `).join('') : `<div class="empty-message">${chrome.i18n.getMessage('no_following')}</div>`;
+    `).join('') : `<div class="empty-message">${escapeHTML(chrome.i18n.getMessage('no_favorites'))}</div>`;
 
     this.attachListListeners();
   },
 
   async initTheme() {
     const savedTheme = await Storage.get(STORAGE_KEYS.THEME) || 'auto';
-    document.querySelector(`input[name="theme"][value="${savedTheme}"]`).checked = true;
+    const radioBtn = document.querySelector(`input[name="theme"][value="${savedTheme}"]`);
+    if (radioBtn) {
+      radioBtn.checked = true;
+    }
     
     if (savedTheme === 'auto') {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -281,22 +127,104 @@ export const UI = {
     const filteredWords = await Storage.get(STORAGE_KEYS.FILTERED_WORDS) || [];
     this.elements.filterTags.innerHTML = filteredWords.map(word => `
       <div class="filter-tag">
-        ${word}
-        <span class="material-icons remove" data-word="${word}">close</span>
+        <span>${escapeHTML(word)}</span>
+        <span class="material-icons remove" data-word="${escapeHTML(word)}">close</span>
       </div>
     `).join('');
 
     // Silme butonlarına event listener ekle
-    document.querySelectorAll('.filter-tag .remove').forEach(btn => {
+    this.elements.filterTags.querySelectorAll('.remove').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const word = e.target.dataset.word;
-        const filteredWords = await Storage.get(STORAGE_KEYS.FILTERED_WORDS) || [];
-        const updatedWords = filteredWords.filter(w => w !== word);
+        const currentFilteredWords = await Storage.get(STORAGE_KEYS.FILTERED_WORDS) || [];
+        const updatedWords = currentFilteredWords.filter(w => w !== word);
         await Storage.set(STORAGE_KEYS.FILTERED_WORDS, updatedWords);
         await this.renderFilterTags();
         await Topics.render(Topics.cachedTopics);
       });
     });
+  },
+
+  async renderAuthorTags() {
+    if (!this.elements.authorFilterTags) return;
+    const blockedAuthors = await Storage.getBlockedAuthors();
+    this.elements.authorFilterTags.innerHTML = blockedAuthors.map(author => `
+      <div class="filter-tag">
+        <span>@${escapeHTML(author)}</span>
+        <span class="material-icons remove" data-author="${escapeHTML(author)}">close</span>
+      </div>
+    `).join('');
+
+    // Silme butonlarına event listener ekle
+    this.elements.authorFilterTags.querySelectorAll('.remove').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const author = e.target.dataset.author;
+        await Storage.removeBlockedAuthor(author);
+        await this.renderAuthorTags();
+      });
+    });
+  },
+
+  async exportBackup() {
+    const favorites = await Storage.getFavorites();
+    const filteredWords = await Storage.get(STORAGE_KEYS.FILTERED_WORDS) || [];
+    const blockedAuthors = await Storage.getBlockedAuthors();
+    const theme = await Storage.get(STORAGE_KEYS.THEME) || 'auto';
+
+    const backupData = {
+      version: '1.0.0',
+      exportDate: new Date().toISOString(),
+      data: {
+        favorites,
+        filteredWords,
+        blockedAuthors,
+        theme
+      }
+    };
+
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ekstension_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  async importBackup(jsonString) {
+    try {
+      const backup = JSON.parse(jsonString);
+      if (!backup || !backup.data) {
+        throw new Error('Geçersiz yedek dosyası formatı');
+      }
+
+      const { favorites, filteredWords, blockedAuthors, theme } = backup.data;
+
+      if (Array.isArray(favorites)) {
+        await Storage.set(STORAGE_KEYS.FAVORITES, favorites);
+      }
+      if (Array.isArray(filteredWords)) {
+        await Storage.set(STORAGE_KEYS.FILTERED_WORDS, filteredWords);
+      }
+      if (Array.isArray(blockedAuthors)) {
+        await Storage.set(STORAGE_KEYS.BLOCKED_AUTHORS, blockedAuthors);
+      }
+      if (typeof theme === 'string') {
+        await Storage.set(STORAGE_KEYS.THEME, theme);
+      }
+
+      // Arayüzü yenile
+      await this.initTheme();
+      await this.renderFilterTags();
+      await this.renderAuthorTags();
+      await this.renderLists();
+      await Topics.render(Topics.cachedTopics);
+
+      alert(chrome.i18n.getMessage('import_success') || 'Yedek başarıyla geri yüklendi!');
+    } catch (err) {
+      console.error('Import error:', err);
+      alert(chrome.i18n.getMessage('import_error') || 'Yedek yüklenirken bir hata oluştu!');
+    }
   },
 
   attachTopicListeners() {
@@ -312,7 +240,7 @@ export const UI = {
       item.addEventListener('click', (e) => {
         const moreBtn = e.target.closest('.more-btn');
         const dropdownItem = e.target.closest('.dropdown-item');
-        if (!moreBtn && !dropdownItem) {
+        if (!moreBtn && !dropdownItem && item.dataset.url) {
           chrome.tabs.create({ url: item.dataset.url });
         }
       });
@@ -324,13 +252,32 @@ export const UI = {
       if (moreBtn && dropdownMenu) {
         moreBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          // Önce tüm açık menüleri kapat
+          const isCurrentlyOpen = dropdownMenu.classList.contains('show');
+
+          // Önce tüm açık menüleri ve aktif item'ları kapat
           document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
-            if (menu !== dropdownMenu) {
-              menu.classList.remove('show');
-            }
+            menu.classList.remove('show');
           });
-          dropdownMenu.classList.toggle('show');
+          document.querySelectorAll('.gundem-item.dropdown-active').forEach(el => {
+            el.classList.remove('dropdown-active');
+          });
+
+          if (!isCurrentlyOpen) {
+            // Akıllı konumlandırma: Altta yer kalmadıysa yukarı aç
+            const content = document.querySelector('.content');
+            if (content) {
+              const itemRect = item.getBoundingClientRect();
+              const contentRect = content.getBoundingClientRect();
+              if (itemRect.bottom + 50 > contentRect.bottom) {
+                dropdownMenu.classList.add('open-up');
+              } else {
+                dropdownMenu.classList.remove('open-up');
+              }
+            }
+
+            dropdownMenu.classList.add('show');
+            item.classList.add('dropdown-active');
+          }
         });
       }
       
@@ -348,29 +295,23 @@ export const UI = {
             } else {
               await Topics.addToFavorites({ title, url });
             }
-          } else if (action === 'follow') {
-            if (dropdownItem.classList.contains('active')) {
-              await Topics.removeFromFollowing(url);
-            } else {
-              await Topics.addToFollowing({ title, url });
-            }
           }
           
           dropdownMenu.classList.remove('show');
+          item.classList.remove('dropdown-active');
 
-          // Gündem listesini yeniden render et
+          // Gündem ve arama sonuçlarını yeniden render et
           const favorites = await Storage.getFavorites();
-          const following = await Storage.getFollowing();
           
-          // Arama sonuçlarını yeniden render et
           const results = await Storage.get(STORAGE_KEYS.CURRENT_SEARCH_RESULTS);
           if (results) {
             await Search.displayResults(results);
           }
           
-          // Gündem listesini yeniden render et
-          if (Topics.cachedTopics) {
-            await this.renderTopics(Topics.cachedTopics, favorites, following);
+          const currentList = Topics.getCurrentList ? Topics.getCurrentList() : Topics.cachedTopics;
+          if (currentList && currentList.length > 0) {
+            const filtered = await Topics.filter(currentList);
+            await this.renderTopics(filtered, favorites);
           }
         });
       });
@@ -382,19 +323,20 @@ export const UI = {
         document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
           menu.classList.remove('show');
         });
+        document.querySelectorAll('.gundem-item.dropdown-active').forEach(el => {
+          el.classList.remove('dropdown-active');
+        });
       }
     };
 
-    // Önce eski event listener'ı kaldır
     document.removeEventListener('click', handleClickOutside);
-    // Yeni event listener'ı ekle
     document.addEventListener('click', handleClickOutside);
   },
 
   attachListListeners() {
     document.querySelectorAll('.list-item').forEach(item => {
       item.addEventListener('click', (e) => {
-        if (!e.target.closest('.remove-btn')) {
+        if (!e.target.closest('.remove-btn') && item.dataset.url) {
           chrome.tabs.create({ url: item.dataset.url });
         }
       });
@@ -402,12 +344,8 @@ export const UI = {
     
     document.querySelectorAll('.remove-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const { url, type } = btn.dataset;
-        if (type === 'favorite') {
-          await Topics.removeFromFavorites(url);
-        } else {
-          await Topics.removeFromFollowing(url);
-        }
+        const { url } = btn.dataset;
+        await Topics.removeFromFavorites(url);
         await this.renderLists();
       });
     });
@@ -425,23 +363,14 @@ export const UI = {
   localizeHtml() {
     document.querySelectorAll('[data-i18n]').forEach(element => {
       const key = element.getAttribute('data-i18n');
-      element.textContent = chrome.i18n.getMessage(key);
+      const msg = chrome.i18n.getMessage(key);
+      if (msg) element.textContent = msg;
     });
 
     document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
       const key = element.getAttribute('data-i18n-placeholder');
-      element.placeholder = chrome.i18n.getMessage(key);
+      const msg = chrome.i18n.getMessage(key);
+      if (msg) element.placeholder = msg;
     });
-  },
-
-  async initNotificationSettings() {
-    // Bildirim ayarlarını yükle
-    const notificationsEnabled = await Storage.get(STORAGE_KEYS.NOTIFICATIONS) ?? true;
-    const checkInterval = await Storage.get(STORAGE_KEYS.CHECK_INTERVAL) ?? 1;
-
-    // Checkbox'ı ayarla
-    this.elements.notificationsEnabled.checked = notificationsEnabled;
-    this.elements.checkInterval.value = checkInterval;
-    this.elements.checkInterval.disabled = !notificationsEnabled;
   }
-}; 
+};

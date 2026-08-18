@@ -3,8 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="css/material-icons.css">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/themes.css">
     <script type="module" src="js/popup.js"></script>
@@ -17,16 +16,26 @@
             <span data-i18n="header_title"></span>
         </h1>
         <div class="header-actions">
-            <button class="search-button" id="search-btn">
+            <button class="search-button" id="search-btn" title="Ara">
                 <span class="material-icons">search</span>
             </button>
-            <button class="settings-button" id="settings-btn">
+            <button class="settings-button" id="settings-btn" title="Ayarlar">
                 <span class="material-icons">settings</span>
             </button>
-            <button class="refresh-button" id="refresh-btn">
+            <button class="refresh-button" id="refresh-btn" title="Yenile">
                 <span class="material-icons">refresh</span>
             </button>
         </div>
+    </div>
+    <div class="main-tabs">
+        <button class="main-tab-btn active" data-tab="gundem">
+            <span class="material-icons">local_fire_department</span>
+            <span data-i18n="tab_gundem"></span>
+        </button>
+        <button class="main-tab-btn" data-tab="debe">
+            <span class="material-icons">emoji_events</span>
+            <span data-i18n="tab_debe"></span>
+        </button>
     </div>
     <div id="search-panel" class="search-panel hidden">
         <h2>Ara</h2>
@@ -44,8 +53,6 @@
             <div class="settings-tabs">
                 <button class="tab-btn active" data-tab="general" data-i18n="tab_general"></button>
                 <button class="tab-btn" data-tab="favorites" data-i18n="tab_favorites"></button>
-                <button class="tab-btn" data-tab="following" data-i18n="tab_following"></button>
-                <button class="tab-btn" data-tab="notifications" data-i18n="tab_notifications"></button>
             </div>
             
             <div class="tab-content active" data-tab="general">
@@ -74,12 +81,40 @@
                         <label data-i18n="filter_words_label"></label>
                         <div class="filter-input-container">
                             <input type="text" id="filter-input" data-i18n-placeholder="filter_input_placeholder">
-                            <button id="add-filter-btn" class="icon-button">
+                            <button id="add-filter-btn" class="icon-button" aria-label="Ekle">
                                 <span class="material-icons">add</span>
                             </button>
                         </div>
                     </div>
                     <div id="filter-tags"></div>
+                </div>
+
+                <div class="filter-words">
+                    <div class="filter-header">
+                        <label data-i18n="blocked_authors_label"></label>
+                        <div class="filter-input-container">
+                            <input type="text" id="author-filter-input" data-i18n-placeholder="author_input_placeholder">
+                            <button id="add-author-filter-btn" class="icon-button" aria-label="Yazar Ekle">
+                                <span class="material-icons">add</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="author-filter-tags"></div>
+                </div>
+
+                <div class="backup-restore-group">
+                    <label data-i18n="backup_restore_label"></label>
+                    <div class="backup-actions">
+                        <button id="export-backup-btn" class="backup-btn">
+                            <span class="material-icons">download</span>
+                            <span data-i18n="export_backup_btn"></span>
+                        </button>
+                        <button id="import-backup-btn" class="backup-btn">
+                            <span class="material-icons">upload</span>
+                            <span data-i18n="import_backup_btn"></span>
+                        </button>
+                        <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                    </div>
                 </div>
             </div>
             
@@ -88,45 +123,6 @@
                     <label data-i18n="favorites_label"></label>
                     <div class="list-container" id="favorites-list">
                         <!-- Favoriler buraya dinamik olarak eklenecek -->
-                    </div>
-                </div>
-            </div>
-            
-            <div class="tab-content" data-tab="following">
-                <div class="settings-group">
-                    <label data-i18n="following_label"></label>
-                    <div class="list-container" id="following-list">
-                        <!-- Takip edilenler buraya dinamik olarak eklenecek -->
-                    </div>
-                </div>
-            </div>
-            
-            <div class="tab-content" data-tab="notifications">
-                <div class="settings-group">
-                    <label data-i18n="notification_settings_label"></label>
-                    <div class="notification-settings">
-                        <div class="setting-item">
-                            <label class="setting-label">
-                                <span data-i18n="notifications_enabled"></span>
-                                <div class="setting-control">
-                                    <label class="switch">
-                                        <input type="checkbox" id="notifications-enabled">
-                                        <span class="slider"></span>
-                                    </label>
-                                </div>
-                            </label>
-                        </div>
-                        <div class="setting-item">
-                            <label class="setting-label">
-                                <span data-i18n="check_interval"></span>
-                                <div class="setting-control">
-                                    <div class="input-with-unit">
-                                        <input type="number" id="check-interval" min="1" max="60" value="1">
-                                        <span class="unit">dk</span>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
                     </div>
                 </div>
             </div>

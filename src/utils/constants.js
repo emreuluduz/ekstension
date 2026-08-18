@@ -1,13 +1,12 @@
 export const CACHE_KEYS = {
-  TOPICS: 'topics'
+  TOPICS: 'topics',
+  DEBE: 'debe'
 };
 
 export const STORAGE_KEYS = {
   FAVORITES: 'favorites',
-  FOLLOWING: 'following',
-  NOTIFICATIONS: 'notificationsEnabled',
   FILTERED_WORDS: 'filteredWords',
-  CHECK_INTERVAL: 'checkInterval',
+  BLOCKED_AUTHORS: 'blockedAuthors',
   THEME: 'theme',
   CURRENT_SEARCH_RESULTS: 'currentSearchResults'
 };

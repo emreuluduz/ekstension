@@ -40,30 +40,86 @@ function startUrlCheck() {
 
 startUrlCheck();
 
+// Sayfadan başlık ve veri çıkarma fonksiyonu
+function extractPageData() {
+  const hostname = window.location.hostname;
+  let currentSite = null;
+  let selectors = null;
+
+  if (hostname.includes('youtube.com')) {
+    if (!window.location.href.includes('/watch?v=')) return null;
+    currentSite = 'YOUTUBE';
+    selectors = {
+      mainTitle: '#title.ytd-rich-metadata-renderer',
+      attrTitle: '.yt-video-attribute-view-model__title',
+      attrSubtitle: '.yt-video-attribute-view-model__subtitle',
+      attrString: '.yt-video-attribute-view-model__secondary-subtitle > .yt-core-attributed-string.yt-core-attributed-string--white-space-pre-wrap'
+    };
+  } else if (hostname.includes('wikipedia.org')) {
+    currentSite = 'WIKIPEDIA';
+    selectors = {
+      title: 'h1.firstHeading',
+      summary: 'div.mw-parser-output > p:not([class])'
+    };
+  } else if (hostname.includes('imdb.com')) {
+    currentSite = 'IMDB';
+    selectors = {
+      cast: ['ul.ipc-metadata-list.ipc-metadata-list--dividers-all.title-pc-list.ipc-metadata-list--baseAlt li ul.ipc-inline-list a'],
+      title: 'h1[data-testid="hero__pageTitle"]'
+    };
+  } else if (hostname.includes('steampowered.com')) {
+    currentSite = 'STEAM';
+    selectors = {
+      title: 'div.apphub_AppName',
+      description: 'div.game_description_snippet'
+    };
+  } else if (hostname.includes('epicgames.com')) {
+    currentSite = 'EPIC';
+    selectors = {
+      title: 'h1'
+    };
+  }
+
+  if (!currentSite || !selectors) return null;
+
+  const data = {};
+  for (const [key, selector] of Object.entries(selectors)) {
+    if (Array.isArray(selector)) {
+      const elements = document.querySelectorAll(selector[0]);
+      const uniqueValues = [...new Set(
+        Array.from(elements).map(el => el.textContent.trim()).filter(Boolean)
+      )];
+      data[key] = uniqueValues;
+    } else {
+      const element = document.querySelector(selector);
+      data[key] = element ? element.textContent.trim() : null;
+    }
+  }
+  return { site: currentSite, data };
+}
+
 // Content script'i başlat
 function initializeContentScript() {
-  console.log('Initializing content script for URL:', location.href);
-  
   // Önce mevcut icon'u temizle
   const existingIcon = document.querySelector('.eksi-sticky-icon');
   if (existingIcon) {
     existingIcon.remove();
   }
 
-  // Content script yüklendiğinde background'a bildir
-  if (document.readyState === 'complete') {
+  const notifyReady = () => {
+    const siteInfo = extractPageData();
     chrome.runtime.sendMessage({ 
       action: 'contentScriptReady',
-      url: location.href  // URL'i de gönder
-    });
+      url: location.href,
+      siteInfo
+    }).catch(() => {});
+  };
+
+  // Content script yüklendiğinde background'a bildir
+  if (document.readyState === 'complete') {
+    notifyReady();
   } else {
-    // Sayfa tam yüklenmemişse bekle
-    window.addEventListener('load', () => {
-      chrome.runtime.sendMessage({ 
-        action: 'contentScriptReady',
-        url: location.href
-      });
-    });
+    window.addEventListener('load', notifyReady, { once: true });
   }
 }
 
@@ -79,7 +135,7 @@ function createStickyIcon() {
 
   // Icon'a tıklama olayı
   iconContainer.addEventListener('click', () => {
-    chrome.runtime.sendMessage({ action: 'openPopup' });
+    chrome.runtime.sendMessage({ action: 'openPopup' }).catch(() => {});
   });
 
   return iconContainer;
@@ -87,7 +143,6 @@ function createStickyIcon() {
 
 // Icon'u göster/gizle
 function toggleStickyIcon(show) {
-  console.log('toggleStickyIcon called with:', show); // Debug için log
   let iconContainer = document.querySelector('.eksi-sticky-icon');
   
   if (show) {
@@ -102,8 +157,9 @@ function toggleStickyIcon(show) {
 
 // Background'dan mesajları dinle
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('Content script received message:', message); // Debug için log
   if (message.type === 'EKSI_RESULTS_STATUS') {
     toggleStickyIcon(message.hasResults);
+  } else if (message.type === 'EXTRACT_PAGE_DATA') {
+    sendResponse(extractPageData());
   }
 }); 

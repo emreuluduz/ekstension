@@ -66,4 +66,15 @@ export function turkishToLower(str) {
         .replace(/İ/g, 'i')
         .replace(/I/g, 'ı')
         .toLowerCase();
+}
+
+// XSS önleme için HTML karakterlerini escape eden fonksiyon
+export function escapeHTML(str) {
+    if (!str && str !== 0) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 } 

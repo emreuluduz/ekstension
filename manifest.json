@@ -7,9 +7,6 @@
     "permissions": [
         "storage",
         "contextMenus",
-        "notifications",
-        "alarms",
-        "scripting",
         "tabs",
         "offscreen"
     ],
@@ -40,18 +37,20 @@
     },
     "web_accessible_resources": [{
         "resources": [
-            "src/utils/*.js",
-            "src/actions/js/*.js",
-            "src/background/*.js",
-            "src/content/*.js",
-            "icons/sites/*.png",
-            "icons/*"
+            "icons/icon_48.png"
         ],
-        "matches": ["<all_urls>"]
+        "matches": [
+            "https://*.youtube.com/*",
+            "https://*.wikipedia.org/*",
+            "https://*.imdb.com/*",
+            "https://*.steampowered.com/*",
+            "https://*.epicgames.com/*"
+        ]
     }],
     "content_scripts": [
         {
             "matches": ["*://*.eksisozluk.com/*"],
+            "css": ["src/content/content.css"],
             "js": [
                 "src/content/filter.js"
             ],

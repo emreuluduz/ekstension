@@ -3,8 +3,20 @@
         "message": "ek$tension",
         "description": "The name of the extension"
     },
+    "header_title": {
+        "message": "ek$tension",
+        "description": "Header title in popup"
+    },
+    "tab_gundem": {
+        "message": "Gündem",
+        "description": "Gündem tab"
+    },
+    "tab_debe": {
+        "message": "DEBE",
+        "description": "DEBE tab"
+    },
     "extension_description": {
-        "message": "Advanced tracking and filtering extension for Ekşi Sözlük",
+        "message": "Fast trending topics, DEBE, search, author and topic filtering for Ekşi Sözlük (Unofficial)",
         "description": "The description of the extension"
     },
     "context_menu_search": {
@@ -19,6 +31,34 @@
         "message": "Blocked Words",
         "description": "Label for filter words input"
     },
+    "blocked_authors_label": {
+        "message": "Blocked Authors",
+        "description": "Label for blocked authors list"
+    },
+    "author_input_placeholder": {
+        "message": "Enter author nick...",
+        "description": "Placeholder text for author input"
+    },
+    "backup_restore_label": {
+        "message": "Backup & Restore",
+        "description": "Backup and restore section title"
+    },
+    "export_backup_btn": {
+        "message": "Export Settings (JSON)",
+        "description": "Export backup button"
+    },
+    "import_backup_btn": {
+        "message": "Import Backup",
+        "description": "Import backup button"
+    },
+    "import_success": {
+        "message": "Settings and favorites restored successfully!",
+        "description": "Import success message"
+    },
+    "import_error": {
+        "message": "Invalid backup file or import error!",
+        "description": "Import error message"
+    },
     "theme_label": {
         "message": "Theme",
         "description": "Theme selection label"
@@ -30,6 +70,10 @@
     "theme_light": {
         "message": "Light Theme",
         "description": "Light theme option"
+    },
+    "theme_dark": {
+        "message": "Dark Theme",
+        "description": "Dark theme option"
     },
     "filter_input_placeholder": {
         "message": "Enter a word...",
@@ -51,44 +95,16 @@
         "message": "Failed to load topics",
         "description": "Error message when topics fail to load"
     },
-    "header_title": {
-        "message": "Topics",
-        "description": "Header title in popup"
-    },
     "tab_general": {
         "message": "General"
     },
     "tab_favorites": {
         "message": "Favorites"
     },
-    "tab_following": {
-        "message": "Following"
+    "favorites_label": {
+        "message": "Favorite Topics"
     },
-    "tab_notifications": {
-        "message": "Notifications"
-    },
-    "notification_settings_label": {
-        "message": "Notification Settings"
-    },
-    "notifications_enabled": {
-        "message": "Enable Notifications"
-    },
-    "check_interval": {
-        "message": "Check Interval"
-    },
-    "no_following": {
-        "message": "No topics being followed yet"
-    },
-    "notification_success": {
-        "message": "Follow Success"
-    },
-    "notification_success_message": {
-        "message": "Started following \"%1\""
-    },
-    "new_entries_message": {
-        "message": "%1 new entries"
-    },
-    "go_to_topic": {
-        "message": "Go to Topic"
+    "no_favorites": {
+        "message": "No favorite topics added yet"
     }
 }

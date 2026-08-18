@@ -22,10 +22,6 @@ export const Storage = {
     return await this.get(STORAGE_KEYS.FAVORITES) || [];
   },
 
-  async getFollowing() {
-    return await this.get(STORAGE_KEYS.FOLLOWING) || [];
-  },
-
   async addFavorite(topic) {
     const favorites = await this.getFavorites();
     const exists = favorites.some(f => f.url === topic.url);
@@ -42,28 +38,25 @@ export const Storage = {
     await this.set(STORAGE_KEYS.FAVORITES, filtered);
   },
 
-  async addFollowing(topic) {
-    const following = await this.getFollowing();
-    const exists = following.some(f => f.url === topic.url);
-    if (!exists) {
-      following.push(topic);
-      await this.set(STORAGE_KEYS.FOLLOWING, following);
-    }
-    return !exists;
+  async getBlockedAuthors() {
+    return await this.get(STORAGE_KEYS.BLOCKED_AUTHORS) || [];
   },
 
-  async removeFollowing(url) {
-    const following = await this.getFollowing();
-    const filtered = following.filter(f => f.url !== url);
-    await this.set(STORAGE_KEYS.FOLLOWING, filtered);
+  async addBlockedAuthor(author) {
+    const authors = await this.getBlockedAuthors();
+    const cleanAuthor = (author || '').trim().toLowerCase();
+    if (cleanAuthor && !authors.some(a => a.toLowerCase() === cleanAuthor)) {
+      authors.push(cleanAuthor);
+      await this.set(STORAGE_KEYS.BLOCKED_AUTHORS, authors);
+      return true;
+    }
+    return false;
   },
 
-  async updateFollowing(topic) {
-    const following = await this.getFollowing();
-    const index = following.findIndex(f => f.url === topic.url);
-    if (index !== -1) {
-      following[index] = topic;
-      await this.set(STORAGE_KEYS.FOLLOWING, following);
-    }
+  async removeBlockedAuthor(author) {
+    const authors = await this.getBlockedAuthors();
+    const cleanAuthor = (author || '').trim().toLowerCase();
+    const filtered = authors.filter(a => a.toLowerCase() !== cleanAuthor);
+    await this.set(STORAGE_KEYS.BLOCKED_AUTHORS, filtered);
   }
 };

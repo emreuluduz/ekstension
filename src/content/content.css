@@ -1,3 +1,4 @@
+/* --- Ekşi Sözlük Multi-Site Sticky Icon --- */
 .eksi-sticky-icon {
   position: fixed;
   right: 0;
@@ -44,4 +45,234 @@
   border-radius: 50%;
   border: 2px solid white;
   pointer-events: none;
-} 
+}
+
+/* --- Ekşi Sözlük In-Page Tool: Media & Link Filter Button --- */
+.ekstension-media-filter-container {
+  display: inline-flex;
+  align-items: center;
+  margin: 8px 0 12px 0;
+  font-family: inherit;
+}
+
+.ekstension-media-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.ekstension-media-filter-btn:hover {
+  background: #e8e8e8;
+  border-color: #bbb;
+}
+
+.ekstension-media-filter-btn.active {
+  background: #53a849;
+  color: #fff;
+  border-color: #43873a;
+  box-shadow: 0 2px 6px rgba(83, 168, 73, 0.3);
+}
+
+.ekstension-media-filter-btn .badge-count {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+
+.ekstension-media-filter-btn.active .badge-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+/* Hide non-media entries when media filter is active */
+.ekstension-hide-non-media {
+  display: none !important;
+}
+
+/* --- Ekşi Sözlük In-Page Tool: Author / Troll Blocker --- */
+.ekstension-author-blocked-placeholder {
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px dashed #ccc;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin: 6px 0;
+  font-size: 12px;
+  color: #777;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ekstension-toggle-blocked-entry {
+  background: none;
+  border: 1px solid #bbb;
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ekstension-toggle-blocked-entry:hover {
+  background: #e0e0e0;
+  color: #111;
+}
+
+.ekstension-placeholder-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ekstension-unblock-btn {
+  background: #fdf2f2;
+  border: 1px solid #f8b4b4;
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: #c81e1e;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ekstension-unblock-btn:hover {
+  background: #fee2e2;
+  border-color: #f05252;
+  color: #9b1c1c;
+}
+
+.ekstension-block-author-btn {
+  display: inline-block;
+  margin-left: 6px;
+  opacity: 0.45;
+  cursor: pointer;
+  font-size: 11px;
+  transition: opacity 0.2s;
+  text-decoration: none;
+  vertical-align: middle;
+}
+
+.ekstension-block-author-btn:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+/* --- Ekşi Sözlük In-Page Tool: Media Previews --- */
+.ekstension-preview-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 5px;
+  background: #f0f4f8;
+  color: #1a73e8;
+  border: 1px solid #c2e0ff;
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: all 0.2s;
+}
+
+.ekstension-preview-btn:hover {
+  background: #d8e8f8;
+  color: #1557b0;
+}
+
+.ekstension-media-container {
+  margin: 10px 0;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  max-width: 100%;
+}
+
+.ekstension-image-preview {
+  max-width: 100%;
+  max-height: 500px;
+  object-fit: contain;
+  border-radius: 4px;
+  display: block;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.ekstension-video-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  aspect-ratio: 16 / 9;
+}
+
+.ekstension-video-wrapper iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 4px;
+}
+
+/* Ekşi Sözlük Dark Mode Compatibility */
+body.theme-dark .ekstension-media-filter-btn,
+body[data-theme="dark"] .ekstension-media-filter-btn {
+  background: #252a24;
+  color: #e0e0e0;
+  border-color: #384236;
+}
+
+body.theme-dark .ekstension-media-filter-btn:hover,
+body[data-theme="dark"] .ekstension-media-filter-btn:hover {
+  background: #2e352d;
+  border-color: #53a849;
+}
+
+body.theme-dark .ekstension-author-blocked-placeholder,
+body[data-theme="dark"] .ekstension-author-blocked-placeholder {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #aaa;
+}
+
+body.theme-dark .ekstension-toggle-blocked-entry,
+body[data-theme="dark"] .ekstension-toggle-blocked-entry {
+  border-color: #444;
+  color: #ccc;
+}
+
+body.theme-dark .ekstension-toggle-blocked-entry:hover,
+body[data-theme="dark"] .ekstension-toggle-blocked-entry:hover {
+  background: #333;
+  color: #fff;
+}
+
+body.theme-dark .ekstension-preview-btn,
+body[data-theme="dark"] .ekstension-preview-btn {
+  background: rgba(66, 133, 244, 0.15);
+  color: #8ab4f8;
+  border-color: rgba(138, 180, 248, 0.3);
+}
+
+body.theme-dark .ekstension-preview-btn:hover,
+body[data-theme="dark"] .ekstension-preview-btn:hover {
+  background: rgba(66, 133, 244, 0.25);
+  color: #aecbfa;
+}
+
+body.theme-dark .ekstension-media-container,
+body[data-theme="dark"] .ekstension-media-container {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.1);
+}

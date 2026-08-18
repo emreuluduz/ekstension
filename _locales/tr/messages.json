@@ -4,11 +4,19 @@
         "description": "Eklentinin adı"
     },
     "header_title": {
-        "message": "Gündem",
+        "message": "ek$$tension",
         "description": "Popup başlığı"
     },
+    "tab_gundem": {
+        "message": "Gündem",
+        "description": "Gündem sekmesi"
+    },
+    "tab_debe": {
+        "message": "DEBE",
+        "description": "DEBE sekmesi"
+    },
     "extension_description": {
-        "message": "Ekşi Sözlük için gelişmiş takip ve filtreleme eklentisi",
+        "message": "Ekşi Sözlük için hızlı gündem, debe, arama, yazar ve konu filtreleme eklentisi (Gayriresmi)",
         "description": "Eklentinin açıklaması"
     },
     "context_menu_search": {
@@ -22,6 +30,34 @@
     "filter_words_label": {
         "message": "Engellenen Kelimeler",
         "description": "Filtre kelimeleri girişi etiketi"
+    },
+    "blocked_authors_label": {
+        "message": "Engellenen Yazarlar",
+        "description": "Engellenen yazarlar başlığı"
+    },
+    "author_input_placeholder": {
+        "message": "Yazar nicki girin...",
+        "description": "Yazar girişi için placeholder metni"
+    },
+    "backup_restore_label": {
+        "message": "Yedekleme & Geri Yükleme",
+        "description": "Yedekleme ve geri yükleme başlığı"
+    },
+    "export_backup_btn": {
+        "message": "Ayarları İndir (JSON)",
+        "description": "Yedek indirme butonu"
+    },
+    "import_backup_btn": {
+        "message": "Yedek Yükle",
+        "description": "Yedek yükleme butonu"
+    },
+    "import_success": {
+        "message": "Tüm ayarlar ve favoriler başarıyla geri yüklendi!",
+        "description": "İçe aktarma başarılı mesajı"
+    },
+    "import_error": {
+        "message": "Geçersiz yedek dosyası veya yükleme hatası!",
+        "description": "İçe aktarma hata mesajı"
     },
     "theme_label": {
         "message": "Tema",
@@ -67,56 +103,12 @@
         "message": "Favoriler",
         "description": "Favoriler sekmesi"
     },
-    "tab_following": {
-        "message": "Takip",
-        "description": "Takip edilenler sekmesi"
-    },
-    "tab_notifications": {
-        "message": "Bildirimler",
-        "description": "Bildirimler sekmesi"
-    },
-    "notification_settings_label": {
-        "message": "Bildirim Ayarları",
-        "description": "Bildirim ayarları etiketi"
-    },
-    "notifications_enabled": {
-        "message": "Bildirimleri Aç",
-        "description": "Bildirimleri açma seçeneği"
-    },
-    "check_interval": {
-        "message": "Kontrol Sıklığı",
-        "description": "Kontrol sıklığı etiketi"
-    },
     "favorites_label": {
         "message": "Favori Başlıklar",
         "description": "Favori başlıklar listesi etiketi"
     },
-    "following_label": {
-        "message": "Takip Edilen Başlıklar",
-        "description": "Takip edilen başlıklar listesi etiketi"
-    },
     "no_favorites": {
         "message": "Henüz favori başlık eklenmemiş",
         "description": "Favori başlık olmadığında gösterilen mesaj"
-    },
-    "no_following": {
-        "message": "Henüz takip edilen başlık yok",
-        "description": "Takip edilen başlık olmadığında gösterilen mesaj"
-    },
-    "notification_success": {
-        "message": "Takip Başarılı",
-        "description": "Başlık takip edilmeye başlandığında gösterilen bildirim başlığı"
-    },
-    "notification_success_message": {
-        "message": "\"%1\" başlığı takip edilmeye başlandı.",
-        "description": "Başlık takip edilmeye başlandığında gösterilen bildirim mesajı"
-    },
-    "new_entries_message": {
-        "message": "%1 yeni entry girildi",
-        "description": "Yeni entry girildiğinde gösterilen bildirim mesajı"
-    },
-    "go_to_topic": {
-        "message": "Başlığa Git",
-        "description": "Bildirimde gösterilen başlığa gitme butonu"
     }
 }

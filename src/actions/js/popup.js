@@ -5,183 +5,168 @@ import { Search } from './search.js';
 import { STORAGE_KEYS } from '../../utils/constants.js';
 import { turkishToLower } from '../../utils/helpers.js';
 
-export async function displayEksiResults(data) {
-  // Önce eski container'ı kaldır
-  let container = document.getElementById('eksi-results');
-  if (container) {
-    container.remove();
-  }
-
-  // Sonuç yoksa hiçbir şey yapma
-  if (!data || !data.pageData || !data.eksiResults || Object.keys(data.eksiResults).length === 0) {
-    return;
-  }
-
-  // Yeni container oluştur
-  container = document.createElement('div');
-  container.id = 'eksi-results';
-  container.className = 'results-container';
-
-  // Gündem listesinden önce yerleştir
-  const gundemList = document.getElementById('gundem-list');
-  if (gundemList) {
-    gundemList.parentNode.insertBefore(container, gundemList);
-  }
-
-  // Favori ve takip listelerini al
-  const favorites = await Storage.getFavorites();
-  const following = await Storage.getFollowing();
-
-  let html = `
-    <div class="search-header">
-      <h3>İlgili Başlıklar</h3>
-    </div>
-  `;
-
-  // Her bir selector için sonuçları göster
-  for (const [key, results] of Object.entries(data.eksiResults)) {
-    if (!results || results.length === 0) continue;
-
-    results.forEach(result => {
-      const isFavorite = favorites.some(f => f.url === result.Url);
-      const isFollowing = following.some(f => f.url === result.Url);
-
-      html += `
-        <div class="gundem-item" data-url="${result.Url}" data-title="${result.Title}">
-          <div class="topic-content">
-            <div class="site-icon ${data.site.toLowerCase()}">
-              <img src="/icons/sites/${data.site.toLowerCase()}.png" alt="${data.site}">
-            </div>
-            <span class="title">${result.Title}</span>
-          </div>
-          <button class="more-btn">
-            <span class="material-icons">more_vert</span>
-          </button>
-          <div class="dropdown-menu">
-            <div class="dropdown-item ${isFavorite ? 'active' : ''}" data-action="favorite" data-url="${result.Url}" data-title="${result.Title}">
-              <span class="material-icons" style="color: ${isFavorite ? 'var(--active-icon)' : 'var(--text)'}">
-                ${isFavorite ? 'star' : 'star_outline'}
-              </span>
-              <span class="dropdown-text">
-                ${isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
-              </span>
-            </div>
-            <div class="dropdown-item ${isFollowing ? 'active' : ''}" data-action="follow" data-url="${result.Url}" data-title="${result.Title}">
-              <span class="material-icons" style="color: ${isFollowing ? 'var(--active-icon)' : 'var(--text)'}">
-                ${isFollowing ? 'notifications' : 'notifications_none'}
-              </span>
-              <span class="dropdown-text">
-                ${isFollowing ? 'Takibi Bırak' : 'Başlığı Takip Et'}
-              </span>
-            </div>
-          </div>
-        </div>
-      `;
-    });
-  }
-
-  container.innerHTML = html;
-  UI.attachTopicListeners();
-}
-
 document.addEventListener('DOMContentLoaded', async () => {
   // UI ve tema ayarlarını başlat
   await UI.initTheme();
   UI.localizeHtml();
   await UI.renderFilterTags();
-  await UI.initNotificationSettings();
+  await UI.renderAuthorTags();
 
   // Version bilgisini göster
   const manifest = chrome.runtime.getManifest();
-  UI.elements.versionText.textContent = `v${manifest.version}`;
+  if (UI.elements.versionText) {
+    UI.elements.versionText.textContent = `v${manifest.version}`;
+  }
 
-  // Event listeners
-  UI.elements.addFilterBtn.addEventListener('click', async () => {
-    const word = UI.elements.filterInput.value.trim().toLowerCase();
-    if (word) {
-      await Topics.addFilterWord(word);
-      UI.elements.filterInput.value = '';
-      await UI.renderFilterTags();
-    }
-  });
-
-  UI.elements.filterInput.addEventListener('keypress', async (e) => {
-    if (e.key === 'Enter') {
-      const word = e.target.value.trim().toLowerCase();
+  // Kelime Filtreleme Event Listeners
+  if (UI.elements.addFilterBtn && UI.elements.filterInput) {
+    UI.elements.addFilterBtn.addEventListener('click', async () => {
+      const word = UI.elements.filterInput.value.trim().toLowerCase();
       if (word) {
         await Topics.addFilterWord(word);
-        e.target.value = '';
+        UI.elements.filterInput.value = '';
         await UI.renderFilterTags();
       }
-    }
-  });
+    });
 
-  UI.elements.refreshBtn.addEventListener('click', () => {
-    Topics.refresh();
-  });
+    UI.elements.filterInput.addEventListener('keypress', async (e) => {
+      if (e.key === 'Enter') {
+        const word = e.target.value.trim().toLowerCase();
+        if (word) {
+          await Topics.addFilterWord(word);
+          e.target.value = '';
+          await UI.renderFilterTags();
+        }
+      }
+    });
+  }
+
+  // Yazar Engelleme Event Listeners
+  if (UI.elements.addAuthorFilterBtn && UI.elements.authorFilterInput) {
+    UI.elements.addAuthorFilterBtn.addEventListener('click', async () => {
+      const author = UI.elements.authorFilterInput.value.trim().toLowerCase();
+      if (author) {
+        await Storage.addBlockedAuthor(author);
+        UI.elements.authorFilterInput.value = '';
+        await UI.renderAuthorTags();
+      }
+    });
+
+    UI.elements.authorFilterInput.addEventListener('keypress', async (e) => {
+      if (e.key === 'Enter') {
+        const author = e.target.value.trim().toLowerCase();
+        if (author) {
+          await Storage.addBlockedAuthor(author);
+          e.target.value = '';
+          await UI.renderAuthorTags();
+        }
+      }
+    });
+  }
+
+  // Yedekleme ve Geri Yükleme Listeners
+  if (UI.elements.exportBackupBtn) {
+    UI.elements.exportBackupBtn.addEventListener('click', () => {
+      UI.exportBackup();
+    });
+  }
+
+  if (UI.elements.importBackupBtn && UI.elements.importFileInput) {
+    UI.elements.importBackupBtn.addEventListener('click', () => {
+      UI.elements.importFileInput.click();
+    });
+
+    UI.elements.importFileInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const content = event.target?.result;
+        if (typeof content === 'string') {
+          await UI.importBackup(content);
+        }
+        UI.elements.importFileInput.value = '';
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  if (UI.elements.refreshBtn) {
+    UI.elements.refreshBtn.addEventListener('click', () => {
+      Topics.refresh();
+    });
+  }
 
   // Ayarlar butonu için event listener
-  UI.elements.settingsBtn.addEventListener('click', async () => {
-    const isHidden = UI.elements.settingsPanel.classList.contains('hidden');
-    UI.elements.settingsPanel.classList.toggle('hidden');
-    
-    if (!isHidden) {
-      // Panel kapanıyor
-      await Topics.loadFilterWords();
-      await Topics.render(Topics.cachedTopics);
-    } else {
-      // Panel açılıyor
-      await UI.renderLists();
-      await Topics.render(Topics.cachedTopics);
-    }
+  if (UI.elements.settingsBtn && UI.elements.settingsPanel) {
+    UI.elements.settingsBtn.addEventListener('click', async () => {
+      const searchPanel = document.getElementById('search-panel');
+      const gundemList = document.getElementById('gundem-list');
+      const eksiResults = document.getElementById('eksi-results');
+
+      if (searchPanel) {
+        searchPanel.classList.add('hidden');
+      }
+
+      const isOpening = UI.elements.settingsPanel.classList.contains('hidden');
+      UI.elements.settingsPanel.classList.toggle('hidden');
+      
+      const content = document.querySelector('.content');
+      if (isOpening) {
+        // Panel açılıyor -> Gündem ve arama sonuçlarını gizle
+        if (gundemList) gundemList.style.display = 'none';
+        if (eksiResults) eksiResults.style.display = 'none';
+        if (content) content.scrollTop = 0;
+        await UI.renderLists();
+        await UI.renderAuthorTags();
+        await UI.renderFilterTags();
+      } else {
+        // Panel kapanıyor -> Gündem listesini geri göster
+        if (gundemList) gundemList.style.display = 'block';
+        if (eksiResults) eksiResults.style.display = 'block';
+        if (content) content.scrollTop = 0;
+        await Topics.loadFilterWords();
+        await Topics.render(Topics.cachedTopics);
+      }
+    });
+  }
+
+  // Ana Sekme Değiştirme (Gündem / DEBE)
+  document.querySelectorAll('.main-tab-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (btn.classList.contains('active')) return;
+
+      document.querySelectorAll('.main-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const tab = btn.dataset.tab;
+      const settingsPanel = document.getElementById('settings-panel');
+      const searchPanel = document.getElementById('search-panel');
+      const gundemList = document.getElementById('gundem-list');
+      const content = document.querySelector('.content');
+
+      if (settingsPanel) settingsPanel.classList.add('hidden');
+      if (searchPanel) searchPanel.classList.add('hidden');
+      if (gundemList) gundemList.style.display = 'block';
+      if (content) content.scrollTop = 0;
+
+      await Topics.load(tab);
+    });
   });
 
-  // Tab değiştirme
+  // Ayarlar Tab değiştirme (Genel / Favoriler)
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       
       btn.classList.add('active');
-      document.querySelector(`.tab-content[data-tab="${btn.dataset.tab}"]`).classList.add('active');
+      const targetContent = document.querySelector(`.tab-content[data-tab="${btn.dataset.tab}"]`);
+      if (targetContent) {
+        targetContent.classList.add('active');
+      }
     });
-  });
-
-  // Bildirim ayarlarını kaydet
-  UI.elements.notificationsEnabled.addEventListener('change', async (e) => {
-    const enabled = e.target.checked;
-    await Storage.set(STORAGE_KEYS.NOTIFICATIONS, enabled);
-    UI.elements.checkInterval.disabled = !enabled;
-    
-    // Bildirimleri kapattıysa alarmı durdur
-    if (!enabled) {
-      chrome.alarms.clear('checkTopics');
-    } else {
-      // Bildirimleri açtıysa alarmı başlat
-      const interval = parseInt(UI.elements.checkInterval.value);
-      // Mevcut alarmı temizle
-      await chrome.alarms.clear('checkTopics');
-      chrome.alarms.create('checkTopics', {
-        periodInMinutes: interval,
-        when: Date.now() + 1000  // Hemen başlat
-      });
-      await Storage.set(STORAGE_KEYS.CHECK_INTERVAL, interval);
-      // İlk kontrolü hemen yap
-      chrome.runtime.sendMessage({ action: 'checkFollowedTopics' });
-    }
-  });
-
-  // Kontrol aralığı değiştiğinde kaydet
-  UI.elements.checkInterval.addEventListener('change', async (e) => {
-    const interval = parseInt(e.target.value);
-    await Storage.set(STORAGE_KEYS.CHECK_INTERVAL, interval);
-    
-    // Bildirimler açıksa alarmı güncelle
-    if (UI.elements.notificationsEnabled.checked) {
-      chrome.alarms.create('checkTopics', {
-        periodInMinutes: interval
-      });
-    }
   });
 
   // Tema değişikliği event listener'ı
@@ -214,116 +199,119 @@ document.addEventListener('DOMContentLoaded', async () => {
   const searchClear = document.querySelector('.search-clear');
   let searchTimeout = null;
 
-  // Clear button functionality
-  searchClear.addEventListener('click', () => {
-    searchInput.value = '';
-    searchInput.focus();
-    // Trigger input event to update UI
-    searchInput.dispatchEvent(new Event('input'));
-  });
+  if (searchClear && searchInput) {
+    searchClear.addEventListener('click', () => {
+      searchInput.value = '';
+      searchInput.focus();
+      searchInput.dispatchEvent(new Event('input'));
+    });
+  }
 
-  searchBtn.addEventListener('click', () => {
-    const settingsPanel = document.getElementById('settings-panel');
-    settingsPanel.classList.add('hidden'); // Ayarlar panelini kapat
-    searchPanel.classList.toggle('hidden');
-    if (!searchPanel.classList.contains('hidden')) {
+  if (searchBtn && searchPanel && searchInput) {
+    searchBtn.addEventListener('click', () => {
+      const settingsPanel = document.getElementById('settings-panel');
+      const gundemList = document.getElementById('gundem-list');
+      const eksiResults = document.getElementById('eksi-results');
+
+      if (settingsPanel) {
+        settingsPanel.classList.add('hidden');
+      }
+
+      const isOpening = searchPanel.classList.contains('hidden');
+      searchPanel.classList.toggle('hidden');
+
+      if (isOpening) {
+        if (gundemList) gundemList.style.display = 'none';
+        if (eksiResults) eksiResults.style.display = 'none';
         searchInput.focus();
-    } else {
-        // Arama paneli kapanınca sonuçları temizle ve gündem listesini göster
+      } else {
         const searchResultsContainer = document.getElementById('search-results-container');
         if (searchResultsContainer) {
-            searchResultsContainer.innerHTML = '';
+          searchResultsContainer.innerHTML = '';
         }
-        document.getElementById('gundem-list').style.display = 'block';
-    }
-  });
-
-  // Settings butonu için de arama panelini kapatma ekleyelim
-  document.getElementById('settings-btn').addEventListener('click', () => {
-    searchPanel.classList.add('hidden');
-    // ... existing settings button code ...
-  });
-
-  searchInput.addEventListener('input', (e) => {
-    const searchText = e.target.value.trim();
-    const gundemList = document.getElementById('gundem-list');
-    const searchResultsContainer = document.getElementById('search-results-container');
-    
-    // Clear previous timeout
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-
-    // If search text is empty, show gundem list and remove search results
-    if (searchText.length === 0) {
-      if (searchResultsContainer) {
-        searchResultsContainer.remove();
+        if (gundemList) gundemList.style.display = 'block';
+        if (eksiResults) eksiResults.style.display = 'block';
       }
-      gundemList.style.display = 'block';
-      return;
-    }
+    });
+  }
 
-    // Add debounce to prevent too many requests
-    searchTimeout = setTimeout(() => {
-      performSearch(searchText);
-    }, 300);
-  });
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      const searchText = e.target.value.trim();
+      const gundemList = document.getElementById('gundem-list');
+      const searchResultsContainer = document.getElementById('search-results-container');
+      
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
 
-  // Close search when clicking outside
+      if (searchText.length === 0) {
+        if (searchResultsContainer) {
+          searchResultsContainer.remove();
+        }
+        if (gundemList) {
+          gundemList.style.display = 'block';
+        }
+        return;
+      }
+
+      searchTimeout = setTimeout(() => {
+        performSearch(searchText);
+      }, 300);
+    });
+  }
+
   document.addEventListener('click', (e) => {
-    if (!searchPanel.contains(e.target) && !searchBtn.contains(e.target)) {
+    if (searchPanel && searchBtn && !searchPanel.contains(e.target) && !searchBtn.contains(e.target)) {
       searchPanel.classList.add('hidden');
-      // Arama paneli kapanınca sonuçları temizle ve gündem listesini göster
       const searchResultsContainer = document.getElementById('search-results-container');
       if (searchResultsContainer) {
         searchResultsContainer.innerHTML = '';
       }
-      document.getElementById('gundem-list').style.display = 'block';
+      const gundemList = document.getElementById('gundem-list');
+      if (gundemList) {
+        gundemList.style.display = 'block';
+      }
     }
   });
 
-  // Show loading state during search
   async function performSearch(searchText) {
+    if (!searchPanel) return;
     try {
       searchPanel.classList.add('searching');
       
-      // Önceki arama sonuçlarını temizle
-      const searchResultsContainer = document.getElementById('search-results-container');
+      let searchResultsContainer = document.getElementById('search-results-container');
       if (searchResultsContainer) {
-        searchResultsContainer.innerHTML = `
-          <div class="search-loading-text">
-            Aranıyor...
-          </div>
-        `;
+        searchResultsContainer.textContent = '';
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'search-loading-text';
+        loadingDiv.textContent = 'Aranıyor...';
+        searchResultsContainer.appendChild(loadingDiv);
       }
 
-      // İsteği gönder ve cevabı bekle
       chrome.runtime.sendMessage({
         action: 'performSearch',
         searchText: searchText
       });
-
     } catch (error) {
       console.error('Search error:', error);
       const searchResultsContainer = document.getElementById('search-results-container');
       if (searchResultsContainer) {
-        searchResultsContainer.innerHTML = `
-          <div class="search-error">
-            Arama yapılırken bir hata oluştu
-          </div>
-        `;
+        searchResultsContainer.textContent = '';
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'search-error';
+        errorDiv.textContent = 'Arama yapılırken bir hata oluştu';
+        searchResultsContainer.appendChild(errorDiv);
       }
     } finally {
-      // Loading state'i kaldır
       setTimeout(() => {
-        if (document.body.contains(searchPanel)) { // Panel hala DOM'da mı kontrol et
+        if (document.body.contains(searchPanel)) {
           searchPanel.classList.remove('searching');
         }
       }, 300);
     }
   }
 
-  // Yeni bir fonksiyon olarak tanımla
   function handleSearchResults(message) {
     if (message.action === 'searchResults') {
       displaySearchResults(message.results);
@@ -331,16 +319,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.error('Search error:', message.error);
       const searchResultsContainer = document.getElementById('search-results-container');
       if (searchResultsContainer) {
-        searchResultsContainer.innerHTML = `
-          <div class="search-error">
-            Arama yapılırken bir hata oluştu
-          </div>
-        `;
+        searchResultsContainer.textContent = '';
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'search-error';
+        errorDiv.textContent = 'Arama yapılırken bir hata oluştu';
+        searchResultsContainer.appendChild(errorDiv);
       }
     }
   }
 
-  // Global message listener'a ekle
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'searchResults' || message.action === 'searchError') {
       handleSearchResults(message);
@@ -348,85 +335,88 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   function displaySearchResults(results) {
-    const gundemList = document.getElementById('gundem-list');
-    const content = document.querySelector('.content');
+    const searchResultsContainer = document.getElementById('search-results-container');
+    if (!searchResultsContainer) return;
     
-    // Önce eski arama sonuçlarını temizle
-    let searchResultsContainer = document.getElementById('search-results-container');
-    if (searchResultsContainer) {
-      searchResultsContainer.remove();
-    }
-
-    // Yeni sonuçlar container'ı oluştur
-    searchResultsContainer = document.createElement('div');
-    searchResultsContainer.id = 'search-results-container';
-    searchResultsContainer.className = 'results-container';
+    searchResultsContainer.innerHTML = '';
     
     if (results && (results.Titles?.length > 0 || results.Nicks?.length > 0)) {
-      // Başlıkları göster
       if (results.Titles?.length > 0) {
         const titlesSection = document.createElement('div');
         titlesSection.className = 'search-section';
-        titlesSection.innerHTML = '<div class="search-section-header">Başlıklar</div>';
+        
+        const header = document.createElement('div');
+        header.className = 'search-section-header';
+        header.textContent = 'Başlıklar';
+        titlesSection.appendChild(header);
         
         results.Titles.forEach(title => {
           const resultItem = document.createElement('div');
           resultItem.className = 'gundem-item';
-          resultItem.innerHTML = `
-            <div class="topic-content">
-              <span class="title">${title}</span>
-            </div>
-          `;
+          
+          const topicContent = document.createElement('div');
+          topicContent.className = 'topic-content';
+          
+          const titleSpan = document.createElement('span');
+          titleSpan.className = 'title';
+          titleSpan.textContent = title;
+          
+          topicContent.appendChild(titleSpan);
+          resultItem.appendChild(topicContent);
+          
           resultItem.addEventListener('click', () => {
             const query = turkishToLower(title);
-            window.open(`https://eksisozluk.com/?q=${encodeURIComponent(query)}`, '_blank');
+            chrome.tabs.create({ url: `https://eksisozluk.com/?q=${encodeURIComponent(query)}` });
           });
           titlesSection.appendChild(resultItem);
         });
         searchResultsContainer.appendChild(titlesSection);
       }
 
-      // Yazarları göster
       if (results.Nicks?.length > 0) {
         const nicksSection = document.createElement('div');
         nicksSection.className = 'search-section';
-        nicksSection.innerHTML = '<div class="search-section-header">Yazarlar</div>';
+        
+        const header = document.createElement('div');
+        header.className = 'search-section-header';
+        header.textContent = 'Yazarlar';
+        nicksSection.appendChild(header);
         
         results.Nicks.forEach(nick => {
           const resultItem = document.createElement('div');
           resultItem.className = 'gundem-item';
-          resultItem.innerHTML = `
-            <div class="topic-content">
-              <span class="title">${nick}</span>
-            </div>
-          `;
+          
+          const topicContent = document.createElement('div');
+          topicContent.className = 'topic-content';
+          
+          const titleSpan = document.createElement('span');
+          titleSpan.className = 'title';
+          titleSpan.textContent = nick;
+          
+          topicContent.appendChild(titleSpan);
+          resultItem.appendChild(topicContent);
+          
           resultItem.addEventListener('click', () => {
-            window.open(`https://eksisozluk.com/biri/${nick}`, '_blank');
+            chrome.tabs.create({ url: `https://eksisozluk.com/biri/${encodeURIComponent(nick)}` });
           });
           nicksSection.appendChild(resultItem);
         });
         searchResultsContainer.appendChild(nicksSection);
       }
-
-      // Gündem listesini gizle ve arama sonuçlarını göster
-      gundemList.style.display = 'none';
-      content.insertBefore(searchResultsContainer, gundemList);
     } else {
-      // Sonuç yoksa "sonuç bulunamadı" mesajı göster
-      searchResultsContainer.innerHTML = `
-        <div class="search-error">
-          Sonuç bulunamadı
-        </div>
+      const emptyDiv = document.createElement('div');
+      emptyDiv.className = 'empty-message';
+      emptyDiv.innerHTML = `
+        <span class="material-icons" style="font-size: 28px; display: block; margin-bottom: 6px; opacity: 0.4;">search_off</span>
+        <span>Sonuç bulunamadı</span>
       `;
-      gundemList.style.display = 'none';
-      content.insertBefore(searchResultsContainer, gundemList);
+      searchResultsContainer.appendChild(emptyDiv);
     }
   }
 });
 
-// Listen for Ekşi results
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'EKSI_RESULTS') {
     Search.displayResults(message.data);
   }
-}); 
+});
