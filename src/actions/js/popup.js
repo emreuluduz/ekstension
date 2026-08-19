@@ -98,6 +98,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Buy Me a Coffee Event Listeners
+  const openBuyMeACoffee = (e) => {
+    if (e) e.preventDefault();
+    chrome.tabs.create({ url: 'https://buymeacoffee.com/emreuluduz' });
+  };
+
+  if (UI.elements.coffeeBtn) {
+    UI.elements.coffeeBtn.addEventListener('click', openBuyMeACoffee);
+  }
+
+  if (UI.elements.bmcLinkBtn) {
+    UI.elements.bmcLinkBtn.addEventListener('click', openBuyMeACoffee);
+  }
+
+  if (UI.elements.bmcQrBox) {
+    UI.elements.bmcQrBox.addEventListener('click', openBuyMeACoffee);
+  }
+
   // Ayarlar butonu için event listener
   if (UI.elements.settingsBtn && UI.elements.settingsPanel) {
     UI.elements.settingsBtn.addEventListener('click', async () => {

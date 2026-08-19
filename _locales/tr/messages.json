@@ -110,5 +110,21 @@
     "no_favorites": {
         "message": "Henüz favori başlık eklenmemiş",
         "description": "Favori başlık olmadığında gösterilen mesaj"
+    },
+    "support_btn_title": {
+        "message": "Geliştiriciye Destek Ol",
+        "description": "Header kahve butonu başlığı"
+    },
+    "support_title": {
+        "message": "Geliştiriciye Destek Ol",
+        "description": "Ayarlar destek bölümü başlığı"
+    },
+    "support_desc": {
+        "message": "ek$tension'ı severek kullanıyorsanız bir kahve ısmarlayarak geliştirmeye destek olabilirsiniz.",
+        "description": "Ayarlar destek bölümü açıklaması"
+    },
+    "buy_me_a_coffee_btn": {
+        "message": "Buy me a coffee",
+        "description": "Buy me a coffee butonu metni"
     }
 }

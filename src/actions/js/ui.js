@@ -19,6 +19,9 @@ export const UI = {
     get exportBackupBtn() { return document.getElementById('export-backup-btn'); },
     get importBackupBtn() { return document.getElementById('import-backup-btn'); },
     get importFileInput() { return document.getElementById('import-file-input'); },
+    get coffeeBtn() { return document.getElementById('coffee-btn'); },
+    get bmcLinkBtn() { return document.getElementById('bmc-link-btn'); },
+    get bmcQrBox() { return document.getElementById('bmc-qr-box'); },
     get versionText() { return document.getElementById('version-text'); }
   },
 
@@ -371,6 +374,12 @@ export const UI = {
       const key = element.getAttribute('data-i18n-placeholder');
       const msg = chrome.i18n.getMessage(key);
       if (msg) element.placeholder = msg;
+    });
+
+    document.querySelectorAll('[data-i18n-title]').forEach(element => {
+      const key = element.getAttribute('data-i18n-title');
+      const msg = chrome.i18n.getMessage(key);
+      if (msg) element.title = msg;
     });
   }
 };

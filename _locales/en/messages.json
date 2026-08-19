@@ -106,5 +106,17 @@
     },
     "no_favorites": {
         "message": "No favorite topics added yet"
+    },
+    "support_btn_title": {
+        "message": "Support the Developer"
+    },
+    "support_title": {
+        "message": "Support the Developer"
+    },
+    "support_desc": {
+        "message": "If you enjoy using ek$tension, you can support its development by buying me a coffee."
+    },
+    "buy_me_a_coffee_btn": {
+        "message": "Buy me a coffee"
     }
 }

@@ -19,6 +19,9 @@
             <button class="search-button" id="search-btn" title="Ara">
                 <span class="material-icons">search</span>
             </button>
+            <button class="coffee-button" id="coffee-btn" data-i18n-title="support_btn_title" title="Geliştiriciye Destek Ol">
+                <span class="material-icons">local_cafe</span>
+            </button>
             <button class="settings-button" id="settings-btn" title="Ayarlar">
                 <span class="material-icons">settings</span>
             </button>
@@ -114,6 +117,25 @@
                             <span data-i18n="import_backup_btn"></span>
                         </button>
                         <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                    </div>
+                </div>
+
+                <div class="support-group">
+                    <div class="support-header">
+                        <label data-i18n="support_title"></label>
+                        <p class="support-desc" data-i18n="support_desc"></p>
+                    </div>
+                    <div class="support-body">
+                        <a href="https://buymeacoffee.com/emreuluduz" target="_blank" class="bmc-button-styled" id="bmc-link-btn" rel="noopener noreferrer">
+                            <svg class="bmc-svg-icon" viewBox="0 0 768 768">
+                                <path fill="#000000" d="M608.2 191.6c-4.2-12.7-14.8-21.7-28-23.8-3.4-.5-6.9-.8-10.4-.8H162.7c-3.5 0-7 .3-10.4.8-13.2 2.1-23.8 11.1-28 23.8-4.2 12.8-1.5 26.6 7.1 36.6l49.8 58.1v173.3c0 97.4 79.2 176.6 176.6 176.6h56.4c97.4 0 176.6-79.2 176.6-176.6V286.3l49.8-58.1c8.6-10 11.3-23.8 7.1-36.6zM533 459.6c0 65.5-53.3 118.8-118.8 118.8h-56.4c-65.5 0-118.8-53.3-118.8-118.8V303.4h294v156.2zm51.7-214.3H183.3l-24-28h449.4l-24 28z"/>
+                            </svg>
+                            <span data-i18n="buy_me_a_coffee_btn">Buy me a coffee</span>
+                        </a>
+                        <div class="support-qr-box" id="bmc-qr-box" title="Buy me a coffee QR">
+                            <img src="../../assets/qr-code.png" alt="Buy Me A Coffee QR Code" class="support-qr-image">
+                            <span class="support-qr-label">QR Kodu Tara</span>
+                        </div>
                     </div>
                 </div>
             </div>

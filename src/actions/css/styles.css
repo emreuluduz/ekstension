@@ -110,6 +110,15 @@ body[data-theme="dark"] ::-webkit-scrollbar-thumb {
     transform: translateY(-1px);
 }
 
+.header-actions button.coffee-button:hover {
+    background: rgba(255, 221, 0, 0.22);
+    border-color: rgba(255, 221, 0, 0.45);
+}
+
+.header-actions button.coffee-button:hover .material-icons {
+    color: #ffd54f;
+}
+
 .header-actions button:active,
 .header .search-button:active,
 .header .settings-button:active,
@@ -839,4 +848,120 @@ body[data-theme="dark"] ::-webkit-scrollbar-thumb {
     text-align: center;
     color: var(--secondary-text);
     font-size: 13px;
+}
+
+/* Support & Buy Me A Coffee */
+.support-group {
+    margin-top: 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+}
+
+.support-header {
+    margin-bottom: 12px;
+}
+
+.support-header label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text);
+}
+
+.support-desc {
+    font-size: 12px;
+    color: var(--secondary-text);
+    line-height: 1.45;
+}
+
+.support-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 12px;
+}
+
+.bmc-button-styled {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #FFDD00;
+    color: #000000 !important;
+    border: 1px solid #000000;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+}
+
+.bmc-button-styled:hover {
+    background: #ffe338;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 221, 0, 0.35);
+}
+
+.bmc-button-styled:active {
+    transform: scale(0.97);
+}
+
+.bmc-svg-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.bmc-btn-text {
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    color: #000000;
+}
+
+.support-qr-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    background: #ffffff;
+    padding: 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+    flex-shrink: 0;
+}
+
+.support-qr-box:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.support-qr-image {
+    width: 68px;
+    height: 68px;
+    border-radius: 4px;
+    display: block;
+    object-fit: contain;
+}
+
+.support-qr-label {
+    font-size: 9.5px;
+    font-weight: 600;
+    color: #555555;
+    letter-spacing: 0.1px;
 }
