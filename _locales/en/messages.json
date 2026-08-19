@@ -118,5 +118,17 @@
     },
     "buy_me_a_coffee_btn": {
         "message": "Buy me a coffee"
+    },
+    "cloudflare_title": {
+        "message": "Cloudflare Verification Required"
+    },
+    "cloudflare_desc": {
+        "message": "Ekşi Sözlük bot protection is active. A quick browser verification is needed to load topics."
+    },
+    "cloudflare_btn": {
+        "message": "Verify & Load Topics"
+    },
+    "cloudflare_btn_loading": {
+        "message": "Verifying..."
     }
 }

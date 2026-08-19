@@ -32,6 +32,8 @@ yarn-error.log*
 # Chrome Extension specific
 *.pem
 *.crx
+_metadata/
+scratch/
 
 # Testing
 coverage/

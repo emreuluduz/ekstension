@@ -77,4 +77,25 @@ export function escapeHTML(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+}
+
+// Cloudflare challenge / koruma sayfasını tespit eden fonksiyon
+export function isCloudflareResponse(status, html = '') {
+    if (status === 403 || status === 503) {
+        return true;
+    }
+    if (typeof html === 'string' && html.length > 0) {
+        const lower = html.toLowerCase();
+        return (
+            lower.includes('just a moment...') ||
+            lower.includes('challenges.cloudflare.com') ||
+            lower.includes('cf-turnstile') ||
+            lower.includes('cf_chl_') ||
+            lower.includes('cf-browser-verification') ||
+            lower.includes('attention required! | cloudflare') ||
+            lower.includes('cloudflare ray id') ||
+            (lower.includes('not allowed by policy') && lower.includes('eksisozluk.com'))
+        );
+    }
+    return false;
 } 

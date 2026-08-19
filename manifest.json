@@ -8,8 +8,18 @@
         "storage",
         "contextMenus",
         "tabs",
-        "offscreen"
+        "offscreen",
+        "declarativeNetRequest"
     ],
+    "declarative_net_request": {
+        "rule_resources": [
+            {
+                "id": "ruleset_1",
+                "enabled": true,
+                "path": "rules.json"
+            }
+        ]
+    },
     "host_permissions": [
         "https://eksisozluk.com/*",
         "https://*.youtube.com/*",
@@ -50,6 +60,7 @@
     "content_scripts": [
         {
             "matches": ["*://*.eksisozluk.com/*"],
+            "all_frames": true,
             "css": ["src/content/content.css"],
             "js": [
                 "src/content/filter.js"

@@ -17,7 +17,10 @@ export const MESSAGE_TYPES = {
   SET_TOPIC_TITLES: 'setTopicTitles',
   PARSE_HTML_RESULT: 'parseHtmlResult',
   PARSE_SEARCH_RESULTS: 'parseSearchResults',
-  PARSE_SEARCH_RESULTS_RESPONSE: 'parseSearchResultsResponse'
+  PARSE_SEARCH_RESULTS_RESPONSE: 'parseSearchResultsResponse',
+  START_CLOUDFLARE_SOLVER: 'startCloudflareSolver',
+  CLOUDFLARE_RESOLVED: 'cloudflareResolved',
+  CANCEL_CLOUDFLARE_SOLVER: 'cancelCloudflareSolver'
 }; 
 
 export const SUPPORTED_SITES = {

@@ -2,7 +2,8 @@ import { UI } from './ui.js';
 import { Topics } from './topics.js';
 import { Storage } from './storage.js';
 import { Search } from './search.js';
-import { STORAGE_KEYS } from '../../utils/constants.js';
+import { Cache } from './cache.js';
+import { STORAGE_KEYS, MESSAGE_TYPES, CACHE_KEYS } from '../../utils/constants.js';
 import { turkishToLower } from '../../utils/helpers.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -433,8 +434,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.type === 'EKSI_RESULTS') {
     Search.displayResults(message.data);
+  }
+  if (message.action === MESSAGE_TYPES.CLOUDFLARE_RESOLVED) {
+    if (message.success) {
+      UI.showLoading();
+      await Cache.remove(CACHE_KEYS.TOPICS);
+      await Cache.remove(CACHE_KEYS.DEBE);
+      await Topics.load(Topics.currentTab);
+    } else {
+      UI.showCloudflareChallenge(false);
+    }
+  }
+  if (message.action === MESSAGE_TYPES.CANCEL_CLOUDFLARE_SOLVER) {
+    UI.showCloudflareChallenge(false);
   }
 });

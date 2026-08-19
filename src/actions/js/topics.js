@@ -2,7 +2,7 @@ import { CACHE_KEYS, MESSAGE_TYPES, STORAGE_KEYS } from '../../utils/constants.j
 import { Storage } from './storage.js';
 import { Cache } from './cache.js';
 import { UI } from './ui.js';
-import { parseNumber, formatNumber } from '../../utils/helpers.js';
+import { parseNumber, formatNumber, isCloudflareResponse } from '../../utils/helpers.js';
 
 export const Topics = {
   currentTab: 'gundem',
@@ -17,6 +17,7 @@ export const Topics = {
     try {
       const response = await fetch('https://eksisozluk.com/basliklar/gundem', {
         signal: controller.signal,
+        credentials: 'include',
         headers: {
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           'X-Requested-With': 'XMLHttpRequest'
@@ -25,16 +26,27 @@ export const Topics = {
 
       clearTimeout(timeoutId);
 
-      if (!response.ok) {
+      const html = await response.text();
+
+      if (!response.ok || isCloudflareResponse(response.status, html)) {
+        if (isCloudflareResponse(response.status, html)) {
+          const cfErr = new Error('Cloudflare challenge detected');
+          cfErr.isCloudflare = true;
+          throw cfErr;
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const html = await response.text();
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
 
       const titleElements = doc.querySelectorAll('ul.topic-list.partial > li > a');
       if (!titleElements || titleElements.length === 0) {
+        if (isCloudflareResponse(response.status, html)) {
+          const cfErr = new Error('Cloudflare challenge detected');
+          cfErr.isCloudflare = true;
+          throw cfErr;
+        }
         throw new Error('Gündem başlık listesi DOM içinde bulunamadı');
       }
 
@@ -73,6 +85,7 @@ export const Topics = {
     try {
       const response = await fetch('https://eksisozluk.com/debe', {
         signal: controller.signal,
+        credentials: 'include',
         headers: {
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           'X-Requested-With': 'XMLHttpRequest'
@@ -81,16 +94,27 @@ export const Topics = {
 
       clearTimeout(timeoutId);
 
-      if (!response.ok) {
+      const html = await response.text();
+
+      if (!response.ok || isCloudflareResponse(response.status, html)) {
+        if (isCloudflareResponse(response.status, html)) {
+          const cfErr = new Error('Cloudflare challenge detected');
+          cfErr.isCloudflare = true;
+          throw cfErr;
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const html = await response.text();
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
 
       const titleElements = doc.querySelectorAll('ul.topic-list > li > a, ol.topic-list > li > a, #content-body ul.topic-list > li > a');
       if (!titleElements || titleElements.length === 0) {
+        if (isCloudflareResponse(response.status, html)) {
+          const cfErr = new Error('Cloudflare challenge detected');
+          cfErr.isCloudflare = true;
+          throw cfErr;
+        }
         throw new Error('DEBE listesi DOM içinde bulunamadı');
       }
 
@@ -155,6 +179,11 @@ export const Topics = {
       }
     } catch (error) {
       console.warn('Direct topics fetch failed, checking background fallback:', error);
+      if (error?.isCloudflare) {
+        UI.showCloudflareChallenge();
+        return;
+      }
+
       if (!hasRenderedCache) {
         try {
           const response = await chrome.runtime.sendMessage({ action: MESSAGE_TYPES.FETCH_TOPICS });
@@ -207,6 +236,10 @@ export const Topics = {
       }
     } catch (error) {
       console.error('DEBE fetch error:', error);
+      if (error?.isCloudflare) {
+        UI.showCloudflareChallenge();
+        return;
+      }
       if (!hasRenderedCache) {
         UI.showError();
       }
@@ -302,7 +335,11 @@ export const Topics = {
       }
     } catch (error) {
       console.error('Refresh error:', error);
-      UI.showError();
+      if (error?.isCloudflare) {
+        UI.showCloudflareChallenge();
+      } else {
+        UI.showError();
+      }
     } finally {
       if (refreshIcon) {
         setTimeout(() => {

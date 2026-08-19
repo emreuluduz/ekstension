@@ -1,7 +1,8 @@
-import { STORAGE_KEYS } from '../../utils/constants.js';
+import { STORAGE_KEYS, CACHE_KEYS } from '../../utils/constants.js';
 import { Storage } from './storage.js';
 import { Topics } from './topics.js';
 import { Search } from './search.js';
+import { Cache } from './cache.js';
 import { parseNumber, formatNumber, escapeHTML } from '../../utils/helpers.js';
 
 export const UI = {
@@ -41,6 +42,55 @@ export const UI = {
         ${escapeHTML(chrome.i18n.getMessage('error_loading'))}
       </div>
     `;
+  },
+
+  showCloudflareChallenge() {
+    const title = chrome.i18n.getMessage('cloudflare_title') || 'Cloudflare Doğrulaması';
+    const desc = chrome.i18n.getMessage('cloudflare_desc') || 'Ekşi Sözlük bot koruması devrede. Lütfen aşağıdaki alanda doğrulamayı tamamlayın:';
+
+    this.elements.topicsList.innerHTML = `
+      <div class="cloudflare-card">
+        <div class="cf-header">
+          <div class="cf-icon-wrapper">
+            <span class="material-icons cf-shield">security</span>
+          </div>
+          <div class="cf-header-text">
+            <h3 class="cf-title">${escapeHTML(title)}</h3>
+            <p class="cf-desc">${escapeHTML(desc)}</p>
+          </div>
+        </div>
+        <div class="cf-frame-container">
+          <iframe id="cf-solver-frame" src="https://eksisozluk.com/basliklar/gundem" class="cf-solver-frame"></iframe>
+        </div>
+        <div class="cf-footer-actions">
+          <button id="cf-reload-btn" class="cf-action-btn">
+            <span class="material-icons">refresh</span>
+            <span>Doğrulandı, Yenile</span>
+          </button>
+          <a href="#" id="cf-open-tab-link" class="cf-tab-link">Veya yeni sekmede aç</a>
+        </div>
+      </div>
+    `;
+
+    const reloadBtn = document.getElementById('cf-reload-btn');
+    if (reloadBtn) {
+      reloadBtn.addEventListener('click', async () => {
+        UI.showLoading();
+        await Cache.remove(CACHE_KEYS.TOPICS);
+        await Cache.remove(CACHE_KEYS.DEBE);
+        Topics.load(Topics.currentTab);
+      });
+    }
+
+    const openTabLink = document.getElementById('cf-open-tab-link');
+    if (openTabLink) {
+      openTabLink.addEventListener('click', async (e) => {
+        e.preventDefault();
+        try {
+          await chrome.runtime.sendMessage({ action: 'startCloudflareSolver' });
+        } catch (err) {}
+      });
+    }
   },
 
   createTopicCard(item, favorites) {

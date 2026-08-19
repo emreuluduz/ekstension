@@ -124,6 +124,46 @@ async function analyzeAllTabs() {
   }
 }
 
+// Cloudflare solver tab yönetimi
+let activeSolverTabId = null;
+let solverTimeoutId = null;
+
+async function startCloudflareSolver() {
+  try {
+    if (activeSolverTabId) {
+      try {
+        const existingTab = await chrome.tabs.get(activeSolverTabId);
+        if (existingTab) {
+          await chrome.tabs.update(activeSolverTabId, { active: true });
+          return;
+        }
+      } catch (e) {
+        activeSolverTabId = null;
+      }
+    }
+
+    const tab = await chrome.tabs.create({
+      url: 'https://eksisozluk.com/basliklar/gundem',
+      active: true
+    });
+    activeSolverTabId = tab.id;
+
+    if (solverTimeoutId) clearTimeout(solverTimeoutId);
+    solverTimeoutId = setTimeout(() => {
+      if (activeSolverTabId) {
+        chrome.tabs.remove(activeSolverTabId).catch(() => {});
+        activeSolverTabId = null;
+        chrome.runtime.sendMessage({
+          action: MESSAGE_TYPES.CANCEL_CLOUDFLARE_SOLVER,
+          reason: 'timeout'
+        }).catch(() => {});
+      }
+    }, 45000);
+  } catch (err) {
+    console.error('Error starting Cloudflare solver tab:', err);
+  }
+}
+
 // Debounce'lu analiz fonksiyonu
 const debouncedAnalyzeTab = debounce(async (tab, updatePopup) => {
   await analyzeTab(tab, updatePopup);
@@ -174,6 +214,18 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 
 // Tab kapatıldığında
 chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
+  if (activeSolverTabId && tabId === activeSolverTabId) {
+    activeSolverTabId = null;
+    if (solverTimeoutId) {
+      clearTimeout(solverTimeoutId);
+      solverTimeoutId = null;
+    }
+    chrome.runtime.sendMessage({
+      action: MESSAGE_TYPES.CANCEL_CLOUDFLARE_SOLVER,
+      reason: 'closed_by_user'
+    }).catch(() => {});
+  }
+
   await Storage.remove(STORAGE_KEYS.CURRENT_SEARCH_RESULTS);
   siteAnalyzer.cleanCache();
 });
@@ -245,6 +297,59 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     } catch (e) {
       // openPopup may not be supported in all contexts
     }
+  }
+
+  if (message.action === 'EKSI_PAGE_READY') {
+    const senderTabId = sender?.tab?.id;
+    if (activeSolverTabId && senderTabId === activeSolverTabId) {
+      const closingTabId = activeSolverTabId;
+      activeSolverTabId = null;
+      if (solverTimeoutId) {
+        clearTimeout(solverTimeoutId);
+        solverTimeoutId = null;
+      }
+
+      setTimeout(async () => {
+        try {
+          await chrome.tabs.remove(closingTabId);
+        } catch (e) {}
+
+        chrome.runtime.sendMessage({
+          action: MESSAGE_TYPES.CLOUDFLARE_RESOLVED,
+          success: true
+        }).catch(() => {});
+      }, 1000);
+      sendResponse({ success: true });
+      return true;
+    }
+
+    // İframe içinden veya açık başka sekmeden doğrulama tamamlandıysa popup'a bildir
+    chrome.runtime.sendMessage({
+      action: MESSAGE_TYPES.CLOUDFLARE_RESOLVED,
+      success: true
+    }).catch(() => {});
+    sendResponse({ success: true });
+    return true;
+  }
+
+  if (message.action === MESSAGE_TYPES.START_CLOUDFLARE_SOLVER) {
+    startCloudflareSolver().then(() => {
+      sendResponse({ success: true });
+    });
+    return true;
+  }
+
+  if (message.action === MESSAGE_TYPES.CANCEL_CLOUDFLARE_SOLVER) {
+    if (activeSolverTabId) {
+      chrome.tabs.remove(activeSolverTabId).catch(() => {});
+      activeSolverTabId = null;
+    }
+    if (solverTimeoutId) {
+      clearTimeout(solverTimeoutId);
+      solverTimeoutId = null;
+    }
+    sendResponse({ success: true });
+    return true;
   }
 
   if (message.action === 'performSearch') {

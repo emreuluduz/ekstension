@@ -126,5 +126,21 @@
     "buy_me_a_coffee_btn": {
         "message": "Buy me a coffee",
         "description": "Buy me a coffee butonu metni"
+    },
+    "cloudflare_title": {
+        "message": "Cloudflare Doğrulaması Gerekli",
+        "description": "Cloudflare doğrulama başlığı"
+    },
+    "cloudflare_desc": {
+        "message": "Ekşi Sözlük bot koruması devrede. Başlıkları yüklemek için tarayıcıda kısa bir doğrulama yapılması gerekiyor.",
+        "description": "Cloudflare açıklama metni"
+    },
+    "cloudflare_btn": {
+        "message": "Doğrula ve Başlıkları Getir",
+        "description": "Cloudflare doğrulama butonu"
+    },
+    "cloudflare_btn_loading": {
+        "message": "Doğrulanıyor...",
+        "description": "Cloudflare doğrulama yükleniyor metni"
     }
 }

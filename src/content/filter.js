@@ -373,8 +373,20 @@ function runAllEnhancements() {
   }
 }
 
+// Gerçek Ekşi Sözlük sayfası yüklendiğinde background'a bildir
+function notifyPageReady() {
+  const isRealEksi = !!document.querySelector('#container, #top-navigation, ul.topic-list, #content-body, #logo, header, #topic');
+  if (isRealEksi) {
+    try {
+      chrome.runtime.sendMessage({ action: 'EKSI_PAGE_READY' }).catch(() => {});
+    } catch (e) {}
+  }
+}
+
 // Başlangıç Yüklemesi
 function initialize() {
+  notifyPageReady();
+
   chrome.runtime.sendMessage({ action: 'getFilteredWords' }, (words) => {
     state.filteredWords = words || [];
     filterTopics();
@@ -424,6 +436,7 @@ const observer = new MutationObserver((mutations) => {
   }
 
   if (relevantMutation) {
+    notifyPageReady();
     if (observerTimeout) clearTimeout(observerTimeout);
     observerTimeout = setTimeout(() => {
       runAllEnhancements();
