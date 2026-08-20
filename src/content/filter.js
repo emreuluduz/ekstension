@@ -1371,33 +1371,68 @@ function injectSingleEntrySummarizeButtons() {
       btn.disabled = true;
 
       try {
-        chrome.runtime.sendMessage({
-          action: 'summarizeSingleEntry',
-          entryText: content.textContent.trim(),
-          author
-        }, (response) => {
-          btn.disabled = false;
-          if (response && response.success && response.summary) {
-            btn.innerHTML = '⚡ Özeti Gizle';
-            box = document.createElement('div');
-            box.className = 'ekst-single-summary-box';
-            box.innerHTML = `
-              <div class="ekst-single-summary-box-header">
-                <span>⚡ AI Entry Özeti (@${author})</span>
-              </div>
-              <div class="ekst-single-summary-box-body">
-                ${formatSummaryMarkdown(response.summary)}
-              </div>
-            `;
-            content.parentNode.insertBefore(box, content.nextSibling);
-          } else {
-            btn.innerHTML = '⚠️ Özetlenemedi';
-            setTimeout(() => { btn.innerHTML = '⚡ Özetle'; }, 3000);
+        let summaryText = '';
+        const localLm = (typeof LanguageModel !== 'undefined') ? LanguageModel : (window.LanguageModel || window.ai?.languageModel);
+        
+        if (localLm) {
+          try {
+            console.log('[ek$tension] Summarizing single entry locally with window.LanguageModel...');
+            let session = null;
+            try {
+              session = await localLm.create({
+                systemPrompt: 'Sen Ekşi Sözlük entrylerini tarafsız ve özlü biçimde özetleyen bir asistansın.'
+              });
+            } catch (e) {
+              session = await localLm.create();
+            }
+            const prompt = `Aşağıdaki Ekşi Sözlük entry'sini analiz et ve 2-3 maddelik kısa, tarafsız ve net bir özet çıkar.\n\nYazar: @${author}\nEntry Metni:\n"${content.textContent.trim()}"\n\nLütfen doğrudan özet maddelerini ver:`;
+            summaryText = await session.prompt(prompt);
+            if (session?.destroy) session.destroy();
+          } catch (localErr) {
+            console.warn('[ek$tension] Local LanguageModel call notice, falling back to background:', localErr);
           }
-        });
+        }
+
+        if (!summaryText) {
+          summaryText = await new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage({
+              action: 'summarizeSingleEntry',
+              entryText: content.textContent.trim(),
+              author
+            }, (response) => {
+              if (chrome.runtime.lastError) {
+                reject(new Error(chrome.runtime.lastError.message));
+              } else if (response && response.success && response.summary) {
+                resolve(response.summary);
+              } else {
+                reject(new Error(response?.error || 'Özetlenemedi'));
+              }
+            });
+          });
+        }
+
+        btn.disabled = false;
+        if (summaryText) {
+          btn.innerHTML = '⚡ Özeti Gizle';
+          box = document.createElement('div');
+          box.className = 'ekst-single-summary-box';
+          box.innerHTML = `
+            <div class="ekst-single-summary-box-header">
+              <span>⚡ AI Entry Özeti (@${author})</span>
+            </div>
+            <div class="ekst-single-summary-box-body">
+              ${formatSummaryMarkdown(summaryText)}
+            </div>
+          `;
+          content.parentNode.insertBefore(box, content.nextSibling);
+        } else {
+          btn.innerHTML = '⚠️ Özetlenemedi';
+          setTimeout(() => { btn.innerHTML = '⚡ Özetle'; }, 3000);
+        }
       } catch (err) {
         btn.disabled = false;
         btn.innerHTML = '⚠️ Hata';
+        console.error('[ek$tension] Single entry summary error:', err);
         setTimeout(() => { btn.innerHTML = '⚡ Özetle'; }, 3000);
       }
     });

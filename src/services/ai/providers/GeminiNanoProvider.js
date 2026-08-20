@@ -59,6 +59,23 @@ export class GeminiNanoProvider extends BaseAIProvider {
             justification: 'Running Chrome Built-in AI (LanguageModel) in DOM window context'
           });
         }
+
+        // Handshake: Wait for offscreen.js to be loaded and ready
+        for (let i = 0; i < 15; i++) {
+          try {
+            const isReady = await new Promise((resolve) => {
+              chrome.runtime.sendMessage({ action: 'PING_OFFSCREEN' }, (resp) => {
+                if (chrome.runtime.lastError || !resp?.ready) {
+                  resolve(false);
+                } else {
+                  resolve(true);
+                }
+              });
+            });
+            if (isReady) return;
+          } catch (e) {}
+          await new Promise(r => setTimeout(r, 80));
+        }
       } catch (err) {
         if (!err.message?.includes('single offscreen')) {
           console.warn('[GeminiNanoProvider] Offscreen creation notice:', err);

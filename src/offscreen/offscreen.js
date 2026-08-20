@@ -4,6 +4,11 @@ import { aiService } from '../services/ai/AIService.js';
 
 // Mesajları dinle
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'PING_OFFSCREEN') {
+    sendResponse({ success: true, ready: true });
+    return true;
+  }
+
   if (message.action === 'OFFSCREEN_AI_AVAILABILITY') {
     (async () => {
       try {
