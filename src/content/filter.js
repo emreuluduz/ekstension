@@ -985,13 +985,19 @@ function initEntryHoverPreview() {
 // 6. AI Başlık & Entry Özetleyici (Gemini Nano & Cloud Ready)
 // ==========================================================================
 
-function getCurrentTopicSlug() {
+function getCurrentTopicSlug(mode = '') {
   try {
     const pathname = window.location.pathname.replace(/^\//, '');
-    return pathname.split('?')[0] || 'default_topic';
+    const baseSlug = pathname.split('?')[0] || 'default_topic';
+    return mode ? `${baseSlug}_${mode}` : baseSlug;
   } catch (e) {
-    return 'default_topic';
+    return mode ? `default_topic_${mode}` : 'default_topic';
   }
+}
+
+function isTopicFilteredView() {
+  const search = window.location.search || '';
+  return search.includes('a=popular') || search.includes('a=dailynice') || search.includes('a=nice');
 }
 
 function getCurrentTopicTitle() {
@@ -1062,27 +1068,89 @@ function injectAISummarizeButton() {
     topicTitle.parentNode.insertBefore(container, topicTitle.nextSibling);
   }
 
-  let aiBtn = document.getElementById('ekstension-ai-summary-btn');
-  if (!aiBtn) {
-    aiBtn = document.createElement('button');
+  let wrapper = document.getElementById('ekstension-ai-dropdown-wrapper');
+  if (!wrapper) {
+    wrapper = document.createElement('div');
+    wrapper.id = 'ekstension-ai-dropdown-wrapper';
+    wrapper.className = 'ekst-ai-dropdown-wrapper';
+
+    const aiBtn = document.createElement('button');
     aiBtn.id = 'ekstension-ai-summary-btn';
     aiBtn.className = 'ekstension-ai-summary-btn';
-    aiBtn.innerHTML = `⚡ Başlığı Özetle (AI)`;
-    aiBtn.title = 'Tüm sayfaları tarayarak Gemini Nano ile başlığı özetle';
+    
+    const isFiltered = isTopicFilteredView();
+    aiBtn.innerHTML = isFiltered ? `⚡ Başlığı Özetle (AI) <span style="font-size:10px;margin-left:2px;">▾</span>` : `⚡ Başlığı Özetle (AI)`;
+    aiBtn.title = isFiltered ? 'Özetleme kapsamı seç (Gündemdekiler veya Tüm Başlık)' : 'Tüm sayfaları tarayarak Gemini Nano ile başlığı özetle';
 
-    aiBtn.addEventListener('click', async (e) => {
+    aiBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      handleAISummarizeClick();
+      e.stopPropagation();
+
+      if (isTopicFilteredView()) {
+        toggleAIDropdownMenu(wrapper);
+      } else {
+        handleAISummarizeClick('full');
+      }
     });
 
-    container.appendChild(aiBtn);
+    wrapper.appendChild(aiBtn);
+    container.appendChild(wrapper);
+
+    // Click outside listener for dropdown
+    document.addEventListener('click', (e) => {
+      if (!wrapper.contains(e.target)) {
+        const menu = wrapper.querySelector('.ekst-ai-dropdown-menu');
+        if (menu) menu.remove();
+      }
+    });
   }
 }
 
-async function handleAISummarizeClick(forceRefresh = false) {
-  const slug = getCurrentTopicSlug();
+function toggleAIDropdownMenu(wrapper) {
+  let menu = wrapper.querySelector('.ekst-ai-dropdown-menu');
+  if (menu) {
+    menu.remove();
+    return;
+  }
+
+  menu = document.createElement('div');
+  menu.className = 'ekst-ai-dropdown-menu';
+  menu.innerHTML = `
+    <button class="ekst-ai-dropdown-item" id="ekst-opt-popular">
+      <div class="ekst-ai-dropdown-item-title">🔥 Gündemdekiler (Bugün)</div>
+      <div class="ekst-ai-dropdown-item-desc">Sadece bugünün popüler sayfalarını özetle (Hızlı)</div>
+    </button>
+    <button class="ekst-ai-dropdown-item" id="ekst-opt-full" style="border-top:1px solid rgba(0,0,0,0.06);margin-top:4px;padding-top:8px;">
+      <div class="ekst-ai-dropdown-item-title">📚 Tüm Başlık (Tüm Zamanlar)</div>
+      <div class="ekst-ai-dropdown-item-desc">1. sayfadan itibaren tüm sayfaları tara</div>
+    </button>
+  `;
+
+  menu.querySelector('#ekst-opt-popular').addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.remove();
+    handleAISummarizeClick('popular');
+  });
+
+  menu.querySelector('#ekst-opt-full').addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.remove();
+    handleAISummarizeClick('full');
+  });
+
+  wrapper.appendChild(menu);
+}
+
+async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
+  let effectiveMode = mode;
+  if (effectiveMode === 'auto') {
+    effectiveMode = isTopicFilteredView() ? 'popular' : 'full';
+  }
+
+  const slug = getCurrentTopicSlug(effectiveMode);
   const title = getCurrentTopicTitle();
   const cacheKey = `summary_${slug}`;
+  const modeLabel = effectiveMode === 'popular' ? 'Gündemdekiler (Bugün)' : 'Tüm Başlık';
 
   // Check cache first if not forced refresh
   if (!forceRefresh) {
@@ -1099,15 +1167,18 @@ async function handleAISummarizeClick(forceRefresh = false) {
   showFloatingProgressPill({
     topicSlug: slug,
     topicTitle: title,
+    mode: effectiveMode,
+    modeLabel,
     progress: 10,
-    statusText: '1. Sayfa taranıyor...'
+    statusText: `${modeLabel}: 1. Sayfa taranıyor...`
   });
 
   // Start background task
   chrome.runtime.sendMessage({
     action: 'startTopicSummary',
     topicUrl: window.location.href,
-    topicTitle: title
+    topicTitle: title,
+    mode: effectiveMode
   }, (response) => {
     if (chrome.runtime.lastError || !response?.success) {
       console.warn('Could not start summary task:', chrome.runtime.lastError || response?.error);
@@ -1136,12 +1207,15 @@ function renderSummaryCard(data) {
   }
 
   const metaText = data.totalEntries ? `${data.totalEntries} entry (${data.totalPages || 1} sayfa)` : '';
+  const modeBadge = data.mode === 'popular' 
+    ? `<span class="ekst-summary-badge" style="background:#ea580c">Gündem (Bugün)</span>` 
+    : `<span class="ekst-summary-badge">Gemini Nano</span>`;
 
   card.innerHTML = `
     <div class="ekst-summary-header">
       <div class="ekst-summary-header-left">
         <span class="ekst-summary-title">⚡ AI Başlık Özeti</span>
-        <span class="ekst-summary-badge">Gemini Nano</span>
+        ${modeBadge}
         ${metaText ? `<span class="ekst-summary-meta">• ${metaText}</span>` : ''}
       </div>
       <div class="ekst-summary-header-right">
@@ -1175,7 +1249,7 @@ function renderSummaryCard(data) {
   const refreshBtn = card.querySelector('#ekst-refresh-summary-btn');
   if (refreshBtn) {
     refreshBtn.addEventListener('click', () => {
-      handleAISummarizeClick(true);
+      handleAISummarizeClick(data.mode || 'auto', true);
     });
   }
 

@@ -445,7 +445,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === MESSAGE_TYPES.START_TOPIC_SUMMARY) {
     (async () => {
       try {
-        summarizerTaskManager.startTopicSummary(message.topicUrl, message.topicTitle, sender?.tab?.id);
+        summarizerTaskManager.startTopicSummary(message.topicUrl, message.topicTitle, sender?.tab?.id, message.mode || 'auto');
         sendResponse({ success: true });
       } catch (err) {
         sendResponse({ success: false, error: err.message });

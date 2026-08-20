@@ -16,13 +16,15 @@ class SummarizerTaskManager {
   /**
    * Get slug / unique key from topic URL
    */
-  getTopicSlug(url) {
+  getTopicSlug(url, mode = '') {
     try {
       const parsed = new URL(url);
       const pathname = parsed.pathname.replace(/^\//, '');
-      return pathname.split('?')[0] || 'default_topic';
+      const baseSlug = pathname.split('?')[0] || 'default_topic';
+      return mode ? `${baseSlug}_${mode}` : baseSlug;
     } catch (e) {
-      return url.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const safe = url.replace(/[^a-zA-Z0-9_-]/g, '_');
+      return mode ? `${safe}_${mode}` : safe;
     }
   }
 
@@ -129,8 +131,33 @@ class SummarizerTaskManager {
   /**
    * Start topic summarization
    */
-  async startTopicSummary(topicUrl, topicTitle, sourceTabId = null) {
-    const topicSlug = this.getTopicSlug(topicUrl);
+  /**
+   * Start topic summarization
+   */
+  async startTopicSummary(topicUrl, topicTitle, sourceTabId = null, mode = 'auto') {
+    let effectiveMode = mode;
+    let queryParams = '';
+
+    try {
+      const parsedUrl = new URL(topicUrl);
+      const aParam = parsedUrl.searchParams.get('a');
+      if (effectiveMode === 'popular' || (effectiveMode === 'auto' && aParam === 'popular')) {
+        effectiveMode = 'popular';
+        queryParams = 'a=popular';
+      } else if (effectiveMode === 'filtered' || (effectiveMode === 'auto' && aParam)) {
+        effectiveMode = 'filtered';
+        queryParams = `a=${aParam}`;
+      } else {
+        effectiveMode = 'full';
+        queryParams = '';
+      }
+    } catch (e) {
+      effectiveMode = 'full';
+    }
+
+    const topicSlug = this.getTopicSlug(topicUrl, effectiveMode);
+    const modeLabel = effectiveMode === 'popular' ? 'Gündemdekiler (Bugün)' : 
+                      effectiveMode === 'filtered' ? 'Filtrelenmiş Sayfalar' : 'Tüm Başlık';
 
     // Cancel existing task if running
     if (this.activeTask && this.activeTask.status === 'running') {
@@ -141,10 +168,12 @@ class SummarizerTaskManager {
       topicUrl,
       topicTitle: topicTitle || 'Ekşi Sözlük Başlığı',
       topicSlug,
+      mode: effectiveMode,
+      modeLabel,
       status: 'running',
       stage: 'starting',
       progress: 5,
-      statusText: 'Başlık bilgileri alınıyor...',
+      statusText: `${modeLabel}: Başlık bilgileri alınıyor...`,
       totalPages: 1,
       currentPage: 0,
       totalEntries: 0,
@@ -155,11 +184,18 @@ class SummarizerTaskManager {
     this.activeTask = task;
 
     try {
-      await this.updateProgress(task, 10, '1. Sayfa taranıyor...', 'crawling');
+      await this.updateProgress(task, 10, `${modeLabel}: 1. Sayfa taranıyor...`, 'crawling');
 
       // 1. Fetch First Page
       const baseCleanUrl = topicUrl.split('?')[0];
-      const firstPageResponse = await fetch(`${baseCleanUrl}?p=1`, {
+      const getPageUrl = (page) => {
+        if (queryParams) {
+          return `${baseCleanUrl}?${queryParams}&p=${page}`;
+        }
+        return `${baseCleanUrl}?p=${page}`;
+      };
+
+      const firstPageResponse = await fetch(getPageUrl(1), {
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
       });
 
@@ -187,7 +223,7 @@ class SummarizerTaskManager {
           await this.updateProgress(
             task,
             crawlPercent,
-            `Sayfa ${page} / ${totalPages} taranıyor (${allEntries.length} entry toplandı)...`,
+            `${modeLabel}: Sayfa ${page} / ${totalPages} taranıyor (${allEntries.length} entry toplandı)...`,
             'crawling'
           );
 
@@ -195,7 +231,7 @@ class SummarizerTaskManager {
           await this.sleep(400 + Math.random() * 400);
 
           try {
-            const pageResp = await fetch(`${baseCleanUrl}?p=${page}`, {
+            const pageResp = await fetch(getPageUrl(page), {
               headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
             if (pageResp.ok) {
@@ -215,7 +251,7 @@ class SummarizerTaskManager {
       await this.updateProgress(
         task,
         50,
-        `Toplam ${allEntries.length} entry toplandı. Gemini Nano ile özetleniyor...`,
+        `${modeLabel}: Toplam ${allEntries.length} entry toplandı. Gemini Nano ile özetleniyor...`,
         'summarizing'
       );
 
