@@ -1174,16 +1174,28 @@ async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
   });
 
   // Start background task
-  chrome.runtime.sendMessage({
-    action: 'startTopicSummary',
-    topicUrl: window.location.href,
-    topicTitle: title,
-    mode: effectiveMode
-  }, (response) => {
-    if (chrome.runtime.lastError || !response?.success) {
-      console.warn('Could not start summary task:', chrome.runtime.lastError || response?.error);
+  try {
+    if (!chrome.runtime?.id) {
+      alert('Eklenti güncellendi. Lütfen Ekşi Sözlük sayfasını yenileyin (F5).');
+      removeFloatingProgressPill();
+      return;
     }
-  });
+
+    chrome.runtime.sendMessage({
+      action: 'startTopicSummary',
+      topicUrl: window.location.href,
+      topicTitle: title,
+      mode: effectiveMode
+    }, (response) => {
+      if (chrome.runtime.lastError || !response?.success) {
+        console.warn('Could not start summary task:', chrome.runtime.lastError || response?.error);
+      }
+    });
+  } catch (err) {
+    console.warn('[ek$tension] Extension context error:', err);
+    alert('Eklenti güncellendi. Lütfen sayfayı yenileyin (F5).');
+    removeFloatingProgressPill();
+  }
 }
 
 function renderSummaryCard(data) {
