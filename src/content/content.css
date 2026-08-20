@@ -276,3 +276,293 @@ body[data-theme="dark"] .ekstension-media-container {
   background: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 255, 255, 0.1);
 }
+
+.ekstension-media-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #c81e1e;
+  background: #fdf2f2;
+  border: 1px solid #f8b4b4;
+  border-radius: 4px;
+}
+
+.ekstension-media-error a {
+  color: #1a73e8;
+  text-decoration: underline;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+body.theme-dark .ekstension-media-error,
+body[data-theme="dark"] .ekstension-media-error {
+  background: rgba(200, 30, 30, 0.15);
+  border-color: rgba(248, 180, 180, 0.25);
+  color: #fca5a5;
+}
+
+body.theme-dark .ekstension-media-error a,
+body[data-theme="dark"] .ekstension-media-error a {
+  color: #8ab4f8;
+}
+
+.ekstension-media-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+}
+
+body.theme-dark .ekstension-media-loading,
+body[data-theme="dark"] .ekstension-media-loading {
+  color: #aaa;
+}
+
+/* --- Entry Bkz Hover Preview Popover --- */
+#ekstension-entry-popover {
+  position: absolute;
+  z-index: 2147483647;
+  width: 440px;
+  max-width: calc(100vw - 32px);
+  max-height: 400px;
+  background: #ffffff;
+  color: #333333;
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.18), 0 3px 10px rgba(0, 0, 0, 0.08);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.18s;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+#ekstension-entry-popover.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.ekstension-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #eaeaea;
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  user-select: none;
+}
+
+.ekstension-popover-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ekstension-popover-id-badge {
+  background: rgba(27, 123, 0, 0.12);
+  color: #1b7b00;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: monospace;
+  font-weight: bold;
+}
+
+.ekstension-popover-link {
+  color: #1a73e8;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.ekstension-popover-link:hover {
+  text-decoration: underline;
+  color: #1557b0;
+}
+
+.ekstension-popover-body {
+  padding: 12px 14px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #2b2b2b;
+  overflow-y: auto;
+  word-break: break-word;
+  flex: 1 1 auto;
+  max-height: 280px;
+}
+
+.ekstension-popover-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.ekstension-popover-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ekstension-popover-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.ekstension-popover-body a {
+  color: #1b7b00;
+  text-decoration: none;
+}
+
+.ekstension-popover-body a:hover {
+  text-decoration: underline;
+}
+
+.ekstension-popover-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: #fbfbfb;
+  border-top: 1px solid #f0f0f0;
+  border-bottom-left-radius: 7px;
+  border-bottom-right-radius: 7px;
+  font-size: 11.5px;
+  color: #666;
+  user-select: none;
+}
+
+.ekstension-popover-author {
+  color: #1b7b00;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ekstension-popover-author:hover {
+  text-decoration: underline;
+}
+
+.ekstension-popover-date {
+  color: #888;
+  font-size: 11px;
+}
+
+.ekstension-popover-blocked-tag {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  border: 1px solid rgba(220, 53, 69, 0.25);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.ekstension-popover-loading,
+.ekstension-popover-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px;
+  font-size: 13px;
+  color: #666;
+  text-align: center;
+}
+
+.ekstension-popover-error {
+  color: #c81e1e;
+  background: #fff8f8;
+}
+
+/* Dark Mode Support for Popover */
+body.theme-dark #ekstension-entry-popover,
+body[data-theme="dark"] #ekstension-entry-popover {
+  background: #1c201c;
+  color: #e0e0e0;
+  border-color: #313a30;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+body.theme-dark .ekstension-popover-header,
+body[data-theme="dark"] .ekstension-popover-header {
+  background: #242923;
+  border-bottom-color: #313a30;
+  color: #ccc;
+}
+
+body.theme-dark .ekstension-popover-id-badge,
+body[data-theme="dark"] .ekstension-popover-id-badge {
+  background: rgba(83, 168, 73, 0.2);
+  color: #72d665;
+}
+
+body.theme-dark .ekstension-popover-link,
+body[data-theme="dark"] .ekstension-popover-link {
+  color: #8ab4f8;
+}
+
+body.theme-dark .ekstension-popover-body,
+body[data-theme="dark"] .ekstension-popover-body {
+  color: #d8d8d8;
+}
+
+body.theme-dark .ekstension-popover-body::-webkit-scrollbar-thumb,
+body[data-theme="dark"] .ekstension-popover-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+body.theme-dark .ekstension-popover-body a,
+body[data-theme="dark"] .ekstension-popover-body a {
+  color: #72d665;
+}
+
+body.theme-dark .ekstension-popover-footer,
+body[data-theme="dark"] .ekstension-popover-footer {
+  background: #222621;
+  border-top-color: #2e362d;
+  color: #999;
+}
+
+body.theme-dark .ekstension-popover-author,
+body[data-theme="dark"] .ekstension-popover-author {
+  color: #72d665;
+}
+
+body.theme-dark .ekstension-popover-date,
+body[data-theme="dark"] .ekstension-popover-date {
+  color: #777;
+}
+
+body.theme-dark .ekstension-popover-loading,
+body[data-theme="dark"] .ekstension-popover-loading {
+  color: #aaa;
+}
+
+body.theme-dark .ekstension-popover-error,
+body[data-theme="dark"] .ekstension-popover-error {
+  background: rgba(200, 30, 30, 0.12);
+  color: #fca5a5;
+}

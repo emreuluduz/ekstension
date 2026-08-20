@@ -398,4 +398,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     return true;
   }
+
+  if (message.action === 'resolveImageUrl') {
+    (async () => {
+      try {
+        const fetchUrl = message.url;
+        const res = await fetch(fetchUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
+          },
+          redirect: 'follow'
+        });
+        const html = await res.text();
+        const match = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
+                      html.match(/<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["']/i) ||
+                      html.match(/<img\s+id=["']image["']\s+src=["']([^"']+)["']/i) ||
+                      html.match(/<a\s+id=["']image-zoom["']\s+href=["']([^"']+)["']/i);
+        if (match && match[1]) {
+          sendResponse({ success: true, imageUrl: match[1] });
+        } else {
+          sendResponse({ success: false });
+        }
+      } catch (err) {
+        sendResponse({ success: false, error: err.message });
+      }
+    })();
+    return true;
+  }
 });

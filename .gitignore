@@ -13,6 +13,7 @@ build/
 .vscode/
 .cursor/
 .agent/
+.gemini/
 *.swp
 *.swo
 .DS_Store

@@ -24,6 +24,7 @@ The extension requests only the minimum permissions necessary to function:
 | `contextMenus` | To provide a "Search on Ekşi Sözlük" shortcut when you right-click on selected text. |
 | `tabs` | To open search results or topic pages in a new tab upon user click. |
 | `offscreen` | To parse public HTML search results from Ekşi Sözlük safely in Manifest V3 without blocking the background service worker. |
+| `declarativeNetRequest` | To modify response headers for sub_frames so Ekşi Sözlük inline media previews and solvers function properly. |
 
 ---
 

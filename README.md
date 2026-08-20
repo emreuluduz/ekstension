@@ -5,8 +5,9 @@ Chrome extension for Ekşi Sözlük that provides fast trending topics, in-page 
 ## Features
 
 ### In-Page Power Tools (Ekşi Sözlük Web Sitesi Araçları)
+- **Entry Bkz Hover Preview (Entry Önizleme)**: Entry içindeki `(bkz: #173073218)` veya doğrudan entry referans linklerinin üzerine gelindiğinde sayfadan ayrılmadan entry metnini, yazarını ve tarihini gösteren hızlı önizleme kartı.
 - **Media & Link-Only Filter**: Toggle button (`[ 🎬 Sadece Medya & Linkler ]`) on topic pages to instantly filter out text-only entries and show only entries containing images, videos, or external links.
-- **Inline Media Previews**: View images (`.jpg`, `.png`, `hizliresim`, `imgur`) and play YouTube videos directly inside entries without leaving the page.
+- **Inline Media Previews**: View images (`soz.lk`, `eksisozluk.com/img/`, `.jpg`, `.png`, `hizliresim`, `imgur`, `ibb.co`, `resmim.net`) and play YouTube videos directly inside entries without leaving the page.
 - **Author / Troll Blocker**: Block unwanted authors with 1-click (`🚫`) directly on the entry header or from the settings panel. Blocked authors are hidden with an expandable notice.
 - **Topic Keyword Filtering**: Filter out unwanted topics from the sidebar and homepage based on keywords.
 

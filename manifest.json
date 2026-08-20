@@ -21,7 +21,17 @@
         ]
     },
     "host_permissions": [
-        "https://eksisozluk.com/*",
+        "*://*.eksisozluk.com/*",
+        "*://eksisozluk.com/*",
+        "*://*.eksisozluk1923.com/*",
+        "*://eksisozluk1923.com/*",
+        "*://*.eksisozluk2023.com/*",
+        "*://eksisozluk2023.com/*",
+        "*://*.eksisozluk111.com/*",
+        "*://eksisozluk111.com/*",
+        "*://*.soz.lk/*",
+        "*://soz.lk/*",
+        "*://*.ekstat.com/*",
         "https://*.youtube.com/*",
         "https://*.wikipedia.org/*",
         "https://*.imdb.com/*",
@@ -59,7 +69,16 @@
     }],
     "content_scripts": [
         {
-            "matches": ["*://*.eksisozluk.com/*"],
+            "matches": [
+                "*://*.eksisozluk.com/*",
+                "*://eksisozluk.com/*",
+                "*://*.eksisozluk1923.com/*",
+                "*://eksisozluk1923.com/*",
+                "*://*.eksisozluk2023.com/*",
+                "*://eksisozluk2023.com/*",
+                "*://*.eksisozluk111.com/*",
+                "*://eksisozluk111.com/*"
+            ],
             "all_frames": true,
             "css": ["src/content/content.css"],
             "js": [
