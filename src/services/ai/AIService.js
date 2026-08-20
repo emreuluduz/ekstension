@@ -31,16 +31,18 @@ export class AIService {
    * Summarize a single long entry (>500 chars)
    */
   async summarizeSingleEntry(entryText, author = '', options = {}) {
-    const prompt = `Aşağıdaki Ekşi Sözlük entry'sini analiz et ve 2-3 maddelik kısa, tarafsız ve net bir özet çıkar.
+    const prompt = `Aşağıdaki uzun Ekşi Sözlük entry'sini EN FAZLA 2 KISA MADDEDE, çok net ve vurucu biçimde özetle. Özet kesinlikle kısa olmalı (en fazla 2 kısa cümle). Asla giriş cümlesi kurma, doğrudan maddeleri ver.
 
-Yazar: ${author || 'Bilinmeyen Yazar'}
-Entry Metni:
+Yazar: @${author}
+Entry:
 "${entryText.trim()}"
 
-Lütfen doğrudan özet maddelerini ver:`;
+Format:
+• (Yazarın ana iddiası / savunduğu temel fikir - 1 kısa cümle)
+• (Varsa öne sürdüğü en somut argüman veya örnek - 1 kısa cümle)`;
 
     return await this.cloudProvider.summarize(prompt, {
-      systemPrompt: 'Sen Ekşi Sözlük entrylerini tarafsız ve özlü biçimde özetleyen bir asistansın.',
+      systemPrompt: 'Sen Ekşi Sözlük için çalışan son derece özlü, tarafsız ve keskin bir yapay zeka asistanısın. ASLA gevezelik yapma; giriş/bağlaç cümleleri kullanma. Doğrudan ana fikri ve can alıcı noktaları net maddelerle ver.',
       ...options
     });
   }
@@ -77,25 +79,27 @@ Lütfen doğrudan özet maddelerini ver:`;
     });
 
     const prompt = `Başlık: "${topicTitle}"
-Toplam İncelenen Entry Sayısı: ${formattedEntries.length}
+İncelenen Entry Sayısı: ${formattedEntries.length}
 
-Aşağıdaki Ekşi Sözlük başlığında yazılan entry'leri oku ve tarafsız, kapsamlı ve yapılandırılmış bir özet çıkar.
+Aşağıdaki Ekşi Sözlük başlığı altındaki entry'leri oku. Uzatmadan, lafı dolandırmadan son derece net ve öz bir özet çıkar.
 
 ENTRY'LER:
 ${formattedEntries.join('\n\n---\n\n')}
 
-Lütfen yanıtını tam olarak şu Markdown başlıkları altında düzenle:
-📌 **Konu Nedir / Olayın Özeti**
-(Başlığın ve konunun ne hakkında olduğunu 2-3 net cümleyle açıkla)
+Lütfen tam olarak şu kısa ve net formatta yaz:
+📌 **Konu Nedir?**
+(Olayı veya konunun ne olduğunu 1-2 net cümleyle açıkla)
 
-⚖️ **Farklı Görüşler & Tartışmalar**
-(Yazarlar arasındaki farklı bakış açılarını, savunan ve eleştiren tarafların ana argümanlarını maddeler halinde yaz)
+⚖️ **Öne Çıkan Görüşler**
+• **Savunanlar / Destekleyenler:** (Ana argümanı 1 kısa cümle)
+• **Eleştirenler / Karşı Çıkanlar:** (Ana eleştiriyi 1 kısa cümle)
+• **Farklı / İlginç Bakış:** (Varsa dikkat çeken farklı bir yaklaşım - 1 kısa cümle)
 
-💡 **Öne Çıkan Noktalar & Genel Kanı**
-(Entry'lerde en çok vurgulanan detaylar, dikkat çeken tespitler veya ortak kanı)`;
+💡 **Genel Sonuç / Ortak Kanı**
+(Sözlük yazarlarının ağırlıklı eğilimini 1 kısa cümleyle belirt)`;
 
     return await this.cloudProvider.summarize(prompt, {
-      temperature: 0.3
+      temperature: 0.2
     });
   }
 }
