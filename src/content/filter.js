@@ -1179,39 +1179,146 @@ function extractTotalPagesFromCurrentPage() {
   return 1;
 }
 
-async function executeLanguageModelPrompt(promptText, systemPromptText = '') {
-  const lm = (typeof LanguageModel !== 'undefined') ? LanguageModel : (window.LanguageModel || window.ai?.languageModel);
-  if (!lm) {
-    throw new Error('Tarayıcınızda LanguageModel (Gemini Nano) bulunamadı. Lütfen flags ayarlarını kontrol edin.');
+async function getStoredGeminiApiKey() {
+  try {
+    const res = await chrome.storage.local.get('gemini_api_key');
+    return res?.gemini_api_key?.trim() || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+async function callGeminiFlashAPI(promptText, systemInstruction = '') {
+  const apiKey = await getStoredGeminiApiKey();
+  if (!apiKey) {
+    throw new Error('KEY_MISSING');
   }
 
-  const sysPrompt = systemPromptText || 'Sen Ekşi Sözlük entry ve tartışmalarını tarafsız, akıcı ve yapılandırılmış şekilde özetleyen bir yapay zeka asistanısın. Yanıtlarını her zaman Türkçe, net ve madde madde Markdown formatında üret.';
+  const sysPrompt = systemInstruction || 'Sen Ekşi Sözlük entry ve tartışmalarını tarafsız, akıcı ve yapılandırılmış şekilde özetleyen bir yapay zeka asistanısın. Yanıtlarını her zaman Türkçe, net ve madde madde Markdown formatında üret.';
 
-  let session = null;
-  try {
-    try {
-      session = await lm.create({
-        systemPrompt: sysPrompt,
-        temperature: 0.3,
-        topK: 3
-      });
-    } catch (e1) {
-      try {
-        session = await lm.create({
-          initialPrompts: [{ role: 'system', content: sysPrompt }]
-        });
-      } catch (e2) {
-        session = await lm.create();
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: promptText }] }],
+      systemInstruction: { parts: [{ text: sysPrompt }] },
+      generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
+    })
+  });
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    const msg = errData.error?.message || `HTTP ${response.status} Hatası`;
+    if (response.status === 400 || response.status === 403) {
+      throw new Error(`Geçersiz Gemini API Anahtarı: ${msg}`);
+    }
+    throw new Error(msg);
+  }
+
+  const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+  if (!text) throw new Error('Gemini API boş yanıt döndürdü.');
+  return text;
+}
+
+function renderAPIKeySetupCard(onSavedCallback) {
+  let card = document.getElementById('ekst-ai-summary-card');
+  if (!card) {
+    card = document.createElement('div');
+    card.id = 'ekst-ai-summary-card';
+    card.className = 'ekst-ai-summary-card';
+
+    const container = document.querySelector('.ekstension-media-filter-container');
+    if (container) {
+      container.parentNode.insertBefore(card, container.nextSibling);
+    } else {
+      const topicTitle = document.querySelector('#topic h1');
+      if (topicTitle) {
+        topicTitle.parentNode.insertBefore(card, topicTitle.nextSibling);
       }
     }
-
-    const response = await session.prompt(promptText);
-    return response ? response.trim() : '';
-  } finally {
-    if (session && typeof session.destroy === 'function') {
-      try { session.destroy(); } catch (e) {}
-    }
   }
+
+  card.innerHTML = `
+    <div class="ekst-summary-header" style="background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); border-bottom-color: #ddd6fe;">
+      <div class="ekst-summary-header-left">
+        <span class="ekst-summary-title" style="color: #6d28d9;">🔑 Google Gemini API Anahtarı Gerekli</span>
+      </div>
+      <div class="ekst-summary-header-right">
+        <button class="ekst-summary-close-btn" id="ekst-close-api-card-btn" title="Kapat">✕</button>
+      </div>
+    </div>
+    <div class="ekst-summary-body" style="font-size: 13px; color: #334155;">
+      <p style="margin-top:0;">Ekşi Sözlük başlıklarını ve entry'leri <strong>Gemini 1.5 Flash</strong> ile 1 saniyede ücretsiz özetlemek için Google AI Studio API anahtarınızı girin.</p>
+      
+      <div style="background: rgba(124, 58, 237, 0.05); padding: 12px 14px; border-radius: 8px; margin: 12px 0; border: 1px dashed rgba(124, 58, 237, 0.3);">
+        <div style="font-weight: 600; margin-bottom: 4px; color: #5b21b6;">💡 10 Saniyede Ücretsiz Key Nasıl Alınır?</div>
+        <ol style="margin: 6px 0 8px 18px; padding: 0; font-size: 12px; line-height: 1.5;">
+          <li>Aşağıdaki butona tıklayıp Google hesabınızla giriş yapın.</li>
+          <li><strong>"Create API Key"</strong> butonuna basıp key'inizi kopyalayın.</li>
+          <li>Aşağıdaki kutuya yapıştırıp <strong>"Kaydet ve Özetle"</strong> deyin.</li>
+        </ol>
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; background: #7c3aed; color: #fff; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;">
+          🔑 Google AI Studio'dan Ücretsiz Key Al (aistudio.google.com) ↗
+        </a>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 14px;">
+        <input type="password" id="ekst-card-api-key-input" placeholder="AIzaSy..." style="flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-family: monospace;" />
+        <button id="ekst-save-card-api-key-btn" style="background: #16a34a; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer;">
+          💾 Kaydet ve Özetle
+        </button>
+      </div>
+      <div id="ekst-card-api-status" style="font-size: 12px; margin-top: 6px; color: #dc2626; display: none;"></div>
+    </div>
+  `;
+
+  const closeBtn = card.querySelector('#ekst-close-api-card-btn');
+  if (closeBtn) closeBtn.addEventListener('click', () => card.remove());
+
+  const saveBtn = card.querySelector('#ekst-save-card-api-key-btn');
+  const input = card.querySelector('#ekst-card-api-key-input');
+  const status = card.querySelector('#ekst-card-api-status');
+
+  if (saveBtn && input) {
+    saveBtn.addEventListener('click', async () => {
+      const val = input.value.trim();
+      if (!val) {
+        status.style.display = 'block';
+        status.textContent = 'Lütfen bir API anahtarı girin.';
+        return;
+      }
+
+      saveBtn.textContent = 'Doğrulanıyor...';
+      saveBtn.disabled = true;
+
+      try {
+        const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(val)}`;
+        const resp = await fetch(testUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: 'ping' }] }], generationConfig: { maxOutputTokens: 5 } })
+        });
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          throw new Error(err.error?.message || 'Geçersiz API Anahtarı');
+        }
+
+        await chrome.storage.local.set({ gemini_api_key: val });
+        card.remove();
+        if (typeof onSavedCallback === 'function') onSavedCallback();
+      } catch (e) {
+        saveBtn.textContent = '💾 Kaydet ve Özetle';
+        saveBtn.disabled = false;
+        status.style.display = 'block';
+        status.textContent = `Hata: ${e.message}`;
+      }
+    });
+  }
+
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
@@ -1236,10 +1343,10 @@ async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
     } catch (e) {}
   }
 
-  // 2. Check LanguageModel in window
-  const lm = (typeof LanguageModel !== 'undefined') ? LanguageModel : (window.LanguageModel || window.ai?.languageModel);
-  if (!lm) {
-    renderAIHelpCard('Tarayıcınızda yerleşik Prompt API (Gemini Nano / LanguageModel) bulunamadı.');
+  // 2. Check API Key
+  const apiKey = await getStoredGeminiApiKey();
+  if (!apiKey) {
+    renderAPIKeySetupCard(() => handleAISummarizeClick(effectiveMode, forceRefresh));
     return;
   }
 
@@ -1270,7 +1377,7 @@ async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
 
     if (totalPages > 1) {
       for (let page = 2; page <= totalPages; page++) {
-        const crawlPercent = 10 + Math.round(((page - 1) / totalPages) * 35);
+        const crawlPercent = 10 + Math.round(((page - 1) / totalPages) * 50);
         showFloatingProgressPill({
           topicSlug: slug,
           topicTitle: title,
@@ -1280,8 +1387,8 @@ async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
           statusText: `${modeLabel}: Sayfa ${page} / ${totalPages} taranıyor (${allEntries.length} entry)...`
         });
 
-        // Delay 300ms to be safe and polite
-        await new Promise(r => setTimeout(r, 300));
+        // Delay 250ms to be safe and polite
+        await new Promise(r => setTimeout(r, 250));
 
         try {
           const resp = await fetch(getPageUrl(page), {
@@ -1325,8 +1432,8 @@ async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
       topicTitle: title,
       mode: effectiveMode,
       modeLabel,
-      progress: 50,
-      statusText: `${modeLabel}: ${allEntries.length} entry Gemini Nano ile analiz ediliyor...`
+      progress: 75,
+      statusText: `${modeLabel}: Toplam ${allEntries.length} entry Gemini 1.5 Flash ile özetleniyor...`
     });
 
     // 5. Clean & Format entries
@@ -1338,23 +1445,10 @@ async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
       return `[Entry #${idx + 1} | Yazar: @${e.author || 'yazar'} | ${e.date || ''}]:\n${cleanContent}`;
     });
 
-    const CHUNK_SIZE = 12;
-    let finalSummary = '';
+    const prompt = `Başlık: "${title}"
+Toplam İncelenen Entry Sayısı: ${formattedEntries.length}
 
-    if (formattedEntries.length <= CHUNK_SIZE) {
-      showFloatingProgressPill({
-        topicSlug: slug,
-        topicTitle: title,
-        mode: effectiveMode,
-        modeLabel,
-        progress: 75,
-        statusText: `${modeLabel}: Gemini Nano özet üretiyor...`
-      });
-
-      const prompt = `Başlık: "${title}"
-Toplam Entry Sayısı: ${formattedEntries.length}
-
-Aşağıdaki Ekşi Sözlük başlığında yazılan tüm entry'leri oku ve tarafsız, kapsamlı ve yapılandırılmış bir özet çıkar.
+Aşağıdaki Ekşi Sözlük başlığında yazılan entry'leri oku ve tarafsız, kapsamlı ve yapılandırılmış bir özet çıkar.
 
 ENTRY'LER:
 ${formattedEntries.join('\n\n---\n\n')}
@@ -1367,73 +1461,9 @@ Lütfen yanıtını tam olarak şu Markdown başlıkları altında düzenle:
 (Yazarlar arasındaki farklı bakış açılarını, savunan ve eleştiren tarafların ana argümanlarını maddeler halinde yaz)
 
 💡 **Öne Çıkan Noktalar & Genel Kanı**
-(Entry'lerde en çok vurgulanan detaylar veya ortak kanı)`;
+(Entry'lerde en çok vurgulanan detaylar, dikkat çeken tespitler veya ortak kanı)`;
 
-      finalSummary = await executeLanguageModelPrompt(prompt);
-    } else {
-      // Multi-chunk Map-Reduce
-      const chunks = [];
-      for (let i = 0; i < formattedEntries.length; i += CHUNK_SIZE) {
-        chunks.push(formattedEntries.slice(i, i + CHUNK_SIZE));
-      }
-
-      const chunkSummaries = [];
-      for (let i = 0; i < chunks.length; i++) {
-        const chunkNum = i + 1;
-        const pVal = 50 + Math.round(((i + 1) / chunks.length) * 35);
-        showFloatingProgressPill({
-          topicSlug: slug,
-          topicTitle: title,
-          mode: effectiveMode,
-          modeLabel,
-          progress: pVal,
-          statusText: `${modeLabel}: Blok ${chunkNum}/${chunks.length} analiz ediliyor...`
-        });
-
-        const chunkPrompt = `Başlık: "${title}" (Blok ${chunkNum}/${chunks.length})
-
-Aşağıdaki entry grubunun ana fikirlerini, önemli tespitlerini ve öne çıkan argümanlarını 3-4 madde halinde özetle:
-
-${chunks[i].join('\n\n---\n\n')}`;
-
-        try {
-          const cSum = await executeLanguageModelPrompt(chunkPrompt);
-          if (cSum) chunkSummaries.push(`[Blok ${chunkNum} Özeti]:\n${cSum}`);
-        } catch (cErr) {
-          console.warn('[ek$tension] Chunk error:', cErr);
-        }
-      }
-
-      showFloatingProgressPill({
-        topicSlug: slug,
-        topicTitle: title,
-        mode: effectiveMode,
-        modeLabel,
-        progress: 90,
-        statusText: `${modeLabel}: Nihai özet derleniyor...`
-      });
-
-      const reducePrompt = `Başlık: "${title}"
-Toplam Entry Sayısı: ${allEntries.length}
-
-Aşağıda bu başlık altındaki entry gruplarının ara özetleri verilmiştir:
-
-${chunkSummaries.join('\n\n---\n\n')}
-
-Bu ara özetleri birleştirerek başlığın tamamını kapsayan nihai ve akıcı bir özet oluştur.
-
-Lütfen yanıtını tam olarak şu Markdown başlıkları altında düzenle:
-📌 **Konu Nedir / Olayın Özeti**
-(Başlığın ne hakkında olduğunu 2-3 net cümleyle açıkla)
-
-⚖️ **Farklı Görüşler & Tartışmalar**
-(Yazarlar arasındaki farklı bakış açılarını ve ana argümanları maddeler halinde yaz)
-
-💡 **Öne Çıkan Noktalar & Genel Kanı**
-(Ortak kanı ve dikkat çeken tespitler)`;
-
-      finalSummary = await executeLanguageModelPrompt(reducePrompt);
-    }
+    const finalSummary = await callGeminiFlashAPI(prompt);
 
     // 6. Finish & Render
     removeFloatingProgressPill();
@@ -1460,9 +1490,10 @@ Lütfen yanıtını tam olarak şu Markdown başlıkları altında düzenle:
   } catch (err) {
     console.error('[ek$tension] Topic summary error:', err);
     removeFloatingProgressPill();
-    showToastNotification('⚠️ Özetleme Hatası', err.message || 'Özetleme tamamlanamadı.');
-    if (err.message?.includes('Gemini Nano') || err.message?.includes('LanguageModel') || err.message?.includes('Prompt API')) {
-      renderAIHelpCard(err.message);
+    if (err.message === 'KEY_MISSING') {
+      renderAPIKeySetupCard(() => handleAISummarizeClick(effectiveMode, forceRefresh));
+    } else {
+      showToastNotification('⚠️ Özetleme Hatası', err.message || 'Özetleme tamamlanamadı.');
     }
   }
 }
@@ -1490,7 +1521,7 @@ function renderSummaryCard(data) {
   const metaText = data.totalEntries ? `${data.totalEntries} entry (${data.totalPages || 1} sayfa)` : '';
   const modeBadge = data.mode === 'popular' 
     ? `<span class="ekst-summary-badge" style="background:#ea580c">Gündem (Bugün)</span>` 
-    : `<span class="ekst-summary-badge">Gemini Nano</span>`;
+    : `<span class="ekst-summary-badge" style="background:#7c3aed">Gemini 1.5 Flash</span>`;
 
   card.innerHTML = `
     <div class="ekst-summary-header">
@@ -1567,7 +1598,6 @@ function showFloatingProgressPill(task) {
   if (cancelBtn) {
     cancelBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      chrome.runtime.sendMessage({ action: 'cancelTopicSummary' });
       removeFloatingProgressPill();
     });
   }
@@ -1637,7 +1667,7 @@ function injectSingleEntrySummarizeButtons() {
     const btn = document.createElement('button');
     btn.className = 'ekst-single-summary-btn';
     btn.innerHTML = '⚡ Özetle';
-    btn.title = 'Bu uzun entry\'yi Gemini Nano ile kısaca özetle';
+    btn.title = 'Bu uzun entry\'yi Gemini 1.5 Flash ile 1 saniyede özetle';
 
     btn.addEventListener('click', async (e) => {
       e.preventDefault();
@@ -1648,49 +1678,18 @@ function injectSingleEntrySummarizeButtons() {
         return;
       }
 
+      const apiKey = await getStoredGeminiApiKey();
+      if (!apiKey) {
+        renderAPIKeySetupCard();
+        return;
+      }
+
       btn.innerHTML = '⏳ Özetleniyor...';
       btn.disabled = true;
 
       try {
-        let summaryText = '';
-        const localLm = (typeof LanguageModel !== 'undefined') ? LanguageModel : (window.LanguageModel || window.ai?.languageModel);
-        
-        if (localLm) {
-          try {
-            console.log('[ek$tension] Summarizing single entry locally with window.LanguageModel...');
-            let session = null;
-            try {
-              session = await localLm.create({
-                systemPrompt: 'Sen Ekşi Sözlük entrylerini tarafsız ve özlü biçimde özetleyen bir asistansın.'
-              });
-            } catch (e) {
-              session = await localLm.create();
-            }
-            const prompt = `Aşağıdaki Ekşi Sözlük entry'sini analiz et ve 2-3 maddelik kısa, tarafsız ve net bir özet çıkar.\n\nYazar: @${author}\nEntry Metni:\n"${content.textContent.trim()}"\n\nLütfen doğrudan özet maddelerini ver:`;
-            summaryText = await session.prompt(prompt);
-            if (session?.destroy) session.destroy();
-          } catch (localErr) {
-            console.warn('[ek$tension] Local LanguageModel call notice, falling back to background:', localErr);
-          }
-        }
-
-        if (!summaryText) {
-          summaryText = await new Promise((resolve, reject) => {
-            chrome.runtime.sendMessage({
-              action: 'summarizeSingleEntry',
-              entryText: content.textContent.trim(),
-              author
-            }, (response) => {
-              if (chrome.runtime.lastError) {
-                reject(new Error(chrome.runtime.lastError.message));
-              } else if (response && response.success && response.summary) {
-                resolve(response.summary);
-              } else {
-                reject(new Error(response?.error || 'Özetlenemedi'));
-              }
-            });
-          });
-        }
+        const prompt = `Aşağıdaki Ekşi Sözlük entry'sini analiz et ve 2-3 maddelik kısa, tarafsız ve net bir özet çıkar.\n\nYazar: @${author}\nEntry Metni:\n"${content.textContent.trim()}"\n\nLütfen doğrudan özet maddelerini ver:`;
+        const summaryText = await callGeminiFlashAPI(prompt);
 
         btn.disabled = false;
         if (summaryText) {
@@ -1699,7 +1698,7 @@ function injectSingleEntrySummarizeButtons() {
           box.className = 'ekst-single-summary-box';
           box.innerHTML = `
             <div class="ekst-single-summary-box-header">
-              <span>⚡ AI Entry Özeti (@${author})</span>
+              <span>⚡ Gemini 1.5 Flash Entry Özeti (@${author})</span>
             </div>
             <div class="ekst-single-summary-box-body">
               ${formatSummaryMarkdown(summaryText)}
@@ -1714,62 +1713,15 @@ function injectSingleEntrySummarizeButtons() {
         btn.disabled = false;
         btn.innerHTML = '⚠️ Hata';
         console.error('[ek$tension] Single entry summary error:', err);
+        if (err.message === 'KEY_MISSING') {
+          renderAPIKeySetupCard();
+        }
         setTimeout(() => { btn.innerHTML = '⚡ Özetle'; }, 3000);
       }
     });
 
     footer.appendChild(btn);
   });
-}
-
-function renderAIHelpCard(errorMessage) {
-  let card = document.getElementById('ekst-ai-summary-card');
-  if (!card) {
-    card = document.createElement('div');
-    card.id = 'ekst-ai-summary-card';
-    card.className = 'ekst-ai-summary-card';
-
-    const container = document.querySelector('.ekstension-media-filter-container');
-    if (container) {
-      container.parentNode.insertBefore(card, container.nextSibling);
-    } else {
-      const topicTitle = document.querySelector('#topic h1');
-      if (topicTitle) {
-        topicTitle.parentNode.insertBefore(card, topicTitle.nextSibling);
-      }
-    }
-  }
-
-  card.innerHTML = `
-    <div class="ekst-summary-header" style="background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border-bottom-color: #fecdd3;">
-      <div class="ekst-summary-header-left">
-        <span class="ekst-summary-title" style="color: #be123c;">⚠️ Gemini Nano (LanguageModel) Kurulumu Gerekli</span>
-      </div>
-      <div class="ekst-summary-header-right">
-        <button class="ekst-summary-close-btn" id="ekst-close-summary-btn" title="Kapat">✕</button>
-      </div>
-    </div>
-    <div class="ekst-summary-body" style="font-size: 13px;">
-      <p><strong>Yerel yapay zeka modeli (Gemini Nano) tarayıcınızda henüz aktif değil veya indirilmedi.</strong></p>
-      <div style="background: rgba(0,0,0,0.03); padding: 12px; border-radius: 8px; margin: 10px 0;">
-        <strong>1 Dakikada Nasıl Aktif Edilir?</strong>
-        <ul style="margin: 8px 0 0 16px; padding: 0;">
-          <li><code>chrome://flags/#prompt-api-for-gemini-nano</code> adresini açıp <strong>Enabled</strong> yapın.</li>
-          <li><code>chrome://flags/#optimization-guide-on-device-model</code> adresini açıp <strong>Enabled BypassPerfRequirement</strong> yapın.</li>
-          <li>Chrome'u yeniden başlatın (Relaunch).</li>
-          <li><code>chrome://components</code> sayfasından <strong>Optimization Guide On Device Model</strong> satırını güncelleyin.</li>
-        </ul>
-      </div>
-      <p style="color: #64748b; font-size: 11px; margin-top: 8px;">Detaylı rehber eklenti dizinindeki <code>docs/GEMINI_NANO_SETUP.md</code> dosyasında mevcuttur.</p>
-    </div>
-  `;
-
-  const closeBtn = card.querySelector('#ekst-close-summary-btn');
-  if (closeBtn) {
-    closeBtn.addEventListener('click', () => card.remove());
-  }
-
-  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // AI Summarizer Mesajlarını Dinle

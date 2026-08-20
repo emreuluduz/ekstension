@@ -105,6 +105,26 @@
                     <div id="author-filter-tags"></div>
                 </div>
 
+                <div class="ai-settings-group" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(0,0,0,0.08);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label style="font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                            <span class="material-icons" style="font-size: 18px; color: #7c3aed;">auto_awesome</span>
+                            <span>Google Gemini AI Özetleyici</span>
+                        </label>
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size: 11px; color: #2563eb; text-decoration: none;" title="Google AI Studio'dan ücretsiz key al">🔑 Ücretsiz Key Al</a>
+                    </div>
+                    <p style="font-size: 11px; color: #64748b; margin: 0 0 8px 0; line-height: 1.4;">
+                        Başlıkları ve uzun entry'leri Gemini 1.5 Flash ile saniyeler içinde özetlemek için Google AI Studio API anahtarınızı girin.
+                    </p>
+                    <div style="display: flex; gap: 6px;">
+                        <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..." style="flex: 1; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px;" />
+                        <button id="save-gemini-key-btn" class="backup-btn" style="padding: 6px 12px; background: #7c3aed; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500;">
+                            Kaydet
+                        </button>
+                    </div>
+                    <div id="gemini-key-status" style="font-size: 11px; margin-top: 5px; color: #16a34a; display: none;"></div>
+                </div>
+
                 <div class="backup-restore-group">
                     <label data-i18n="backup_restore_label"></label>
                     <div class="backup-actions">

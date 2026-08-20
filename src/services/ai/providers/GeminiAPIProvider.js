@@ -1,8 +1,8 @@
 import { BaseAIProvider } from '../BaseAIProvider.js';
 
 /**
- * Provider for Cloud Google Gemini Flash API (via User API Key)
- * Ready for future extension without core architecture changes
+ * Provider for Official Google Gemini API (Gemini 1.5 / 2.0 Flash)
+ * Uses free API keys from Google AI Studio.
  */
 export class GeminiAPIProvider extends BaseAIProvider {
   constructor(apiKey = '') {
@@ -10,29 +10,80 @@ export class GeminiAPIProvider extends BaseAIProvider {
     this.apiKey = apiKey;
   }
 
+  async getApiKey() {
+    if (this.apiKey && this.apiKey.trim().length > 10) {
+      return this.apiKey.trim();
+    }
+
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+        const stored = await chrome.storage.local.get('gemini_api_key');
+        if (stored?.gemini_api_key) {
+          this.apiKey = stored.gemini_api_key.trim();
+          return this.apiKey;
+        }
+      }
+    } catch (e) {}
+
+    return '';
+  }
+
   setApiKey(apiKey) {
-    this.apiKey = apiKey;
+    this.apiKey = apiKey ? apiKey.trim() : '';
   }
 
   async isAvailable() {
-    const hasKey = Boolean(this.apiKey && this.apiKey.trim().length > 10);
+    const key = await this.getApiKey();
+    const hasKey = Boolean(key && key.length > 10);
     return {
       available: hasKey,
       status: hasKey ? 'ready' : 'key_missing',
-      reason: hasKey ? 'Gemini API Key hazır.' : 'Gemini API Key bulunamadı.'
+      reason: hasKey 
+        ? 'Gemini API Key hazır.' 
+        : 'Gemini API Key bulunamadı. Lütfen Google AI Studio\'dan aldığınız ücretsiz API anahtarınızı girin.'
     };
   }
 
+  /**
+   * Validate API Key by sending a tiny test request
+   */
+  async testApiKey(testKey) {
+    const key = testKey || await this.getApiKey();
+    if (!key) throw new Error('API Anahtarı boş olamaz.');
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(key)}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: 'ping' }] }],
+        generationConfig: { maxOutputTokens: 5 }
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API Hatası: HTTP ${response.status}`);
+    }
+
+    return true;
+  }
+
+  /**
+   * Summarize prompt using Google Gemini 1.5 Flash
+   */
   async summarize(prompt, options = {}) {
-    if (!this.apiKey) {
-      throw new Error('Gemini API Key eksik. Lütfen eklenti ayarlarından API anahtarınızı girin.');
+    const key = await this.getApiKey();
+    if (!key) {
+      throw new Error('Gemini API Key eksik. Lütfen Google AI Studio\'dan aldığınız ücretsiz API anahtarınızı girin.');
     }
 
     const systemInstruction = options.systemPrompt || 
       'Sen Ekşi Sözlük entry ve tartışmalarını tarafsız, akıcı ve yapılandırılmış şekilde özetleyen bir yapay zeka asistanısın. Yanıtlarını her zaman Türkçe, net ve madde madde Markdown formatında üret.';
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(this.apiKey.trim())}`;
-    
+    const modelName = options.model || 'gemini-1.5-flash';
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(key)}`;
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -48,17 +99,26 @@ export class GeminiAPIProvider extends BaseAIProvider {
           parts: [{ text: systemInstruction }]
         },
         generationConfig: {
-          temperature: options.temperature ?? 0.3
+          temperature: options.temperature ?? 0.3,
+          maxOutputTokens: options.maxOutputTokens ?? 2048
         }
       })
     });
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.error?.message || `Gemini API Hatası: HTTP ${response.status}`);
+      const msg = errData.error?.message || `Gemini API Hatası: HTTP ${response.status}`;
+      if (response.status === 400 || response.status === 403) {
+        throw new Error(`Gemini API Anahtarı geçersiz veya yetkisiz: ${msg}`);
+      }
+      throw new Error(msg);
     }
 
     const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+    const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+    if (!resultText) {
+      throw new Error('Gemini API boş yanıt döndürdü.');
+    }
+    return resultText;
   }
 }

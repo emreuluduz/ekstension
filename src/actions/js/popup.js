@@ -65,6 +65,72 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Gemini API Key Ayarları
+  const geminiInput = document.getElementById('gemini-api-key-input');
+  const saveGeminiBtn = document.getElementById('save-gemini-key-btn');
+  const geminiStatus = document.getElementById('gemini-key-status');
+
+  if (geminiInput) {
+    chrome.storage.local.get('gemini_api_key', (res) => {
+      if (res?.gemini_api_key) {
+        geminiInput.value = res.gemini_api_key;
+        if (geminiStatus) {
+          geminiStatus.style.display = 'block';
+          geminiStatus.style.color = '#16a34a';
+          geminiStatus.textContent = '✓ API Anahtarı kayıtlı ve aktif.';
+        }
+      }
+    });
+
+    if (saveGeminiBtn) {
+      saveGeminiBtn.addEventListener('click', async () => {
+        const val = geminiInput.value.trim();
+        if (!val) {
+          await chrome.storage.local.remove('gemini_api_key');
+          if (geminiStatus) {
+            geminiStatus.style.display = 'block';
+            geminiStatus.style.color = '#dc2626';
+            geminiStatus.textContent = 'API Anahtarı temizlendi.';
+          }
+          return;
+        }
+
+        saveGeminiBtn.textContent = 'Test ediliyor...';
+        saveGeminiBtn.disabled = true;
+
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(val)}`;
+          const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: 'ping' }] }], generationConfig: { maxOutputTokens: 5 } })
+          });
+
+          if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.error?.message || `HTTP ${resp.status} Hatası`);
+          }
+
+          await chrome.storage.local.set({ gemini_api_key: val });
+          if (geminiStatus) {
+            geminiStatus.style.display = 'block';
+            geminiStatus.style.color = '#16a34a';
+            geminiStatus.textContent = '✓ Başarılı: Gemini API Anahtarı doğrulandı ve kaydedildi!';
+          }
+        } catch (e) {
+          if (geminiStatus) {
+            geminiStatus.style.display = 'block';
+            geminiStatus.style.color = '#dc2626';
+            geminiStatus.textContent = `Hata: ${e.message}`;
+          }
+        } finally {
+          saveGeminiBtn.textContent = 'Kaydet';
+          saveGeminiBtn.disabled = false;
+        }
+      });
+    }
+  }
+
   // Yedekleme ve Geri Yükleme Listeners
   if (UI.elements.exportBackupBtn) {
     UI.elements.exportBackupBtn.addEventListener('click', () => {
