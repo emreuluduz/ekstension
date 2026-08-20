@@ -1179,7 +1179,7 @@ function extractTotalPagesFromCurrentPage() {
   return 1;
 }
 
-const GEMINI_MODEL = 'gemini-2.0-flash-lite';
+const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 
 async function getStoredGeminiApiKey() {
   try {
@@ -1523,7 +1523,7 @@ function renderSummaryCard(data) {
   const metaText = data.totalEntries ? `${data.totalEntries} entry (${data.totalPages || 1} sayfa)` : '';
   const modeBadge = data.mode === 'popular'
     ? `<span class="ekst-summary-badge" style="background:#ea580c">Gündem (Bugün)</span>`
-    : `<span class="ekst-summary-badge" style="background:#7c3aed">Gemini 1.5 Flash</span>`;
+    : `<span class="ekst-summary-badge" style="background:#7c3aed">Gemini 3.5 Flash Lite</span>`;
 
   card.innerHTML = `
     <div class="ekst-summary-header">

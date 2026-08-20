@@ -51,7 +51,7 @@ export class GeminiAPIProvider extends BaseAIProvider {
     const key = testKey || await this.getApiKey();
     if (!key) throw new Error('API Anahtarı boş olamaz.');
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${encodeURIComponent(key)}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${encodeURIComponent(key)}`;
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -81,7 +81,7 @@ export class GeminiAPIProvider extends BaseAIProvider {
     const systemInstruction = options.systemPrompt || 
       'Sen Ekşi Sözlük entry ve tartışmalarını tarafsız, akıcı ve yapılandırılmış şekilde özetleyen bir yapay zeka asistanısın. Yanıtlarını her zaman Türkçe, net ve madde madde Markdown formatında üret.';
 
-    const modelName = (options.model || 'gemini-2.0-flash-lite').trim();
+    const modelName = (options.model || 'gemini-3.5-flash-lite').trim();
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(key)}`;
 
     const response = await fetch(url, {
