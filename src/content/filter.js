@@ -1179,6 +1179,41 @@ function extractTotalPagesFromCurrentPage() {
   return 1;
 }
 
+async function executeLanguageModelPrompt(promptText, systemPromptText = '') {
+  const lm = (typeof LanguageModel !== 'undefined') ? LanguageModel : (window.LanguageModel || window.ai?.languageModel);
+  if (!lm) {
+    throw new Error('Tarayıcınızda LanguageModel (Gemini Nano) bulunamadı. Lütfen flags ayarlarını kontrol edin.');
+  }
+
+  const sysPrompt = systemPromptText || 'Sen Ekşi Sözlük entry ve tartışmalarını tarafsız, akıcı ve yapılandırılmış şekilde özetleyen bir yapay zeka asistanısın. Yanıtlarını her zaman Türkçe, net ve madde madde Markdown formatında üret.';
+
+  let session = null;
+  try {
+    try {
+      session = await lm.create({
+        systemPrompt: sysPrompt,
+        temperature: 0.3,
+        topK: 3
+      });
+    } catch (e1) {
+      try {
+        session = await lm.create({
+          initialPrompts: [{ role: 'system', content: sysPrompt }]
+        });
+      } catch (e2) {
+        session = await lm.create();
+      }
+    }
+
+    const response = await session.prompt(promptText);
+    return response ? response.trim() : '';
+  } finally {
+    if (session && typeof session.destroy === 'function') {
+      try { session.destroy(); } catch (e) {}
+    }
+  }
+}
+
 async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
   let effectiveMode = mode;
   if (effectiveMode === 'auto') {
@@ -1190,7 +1225,7 @@ async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
   const cacheKey = `summary_${slug}`;
   const modeLabel = effectiveMode === 'popular' ? 'Gündemdekiler (Bugün)' : 'Tüm Başlık';
 
-  // Check cache first if not forced refresh
+  // 1. Check cache first if not forced refresh
   if (!forceRefresh) {
     try {
       const stored = await chrome.storage.local.get(cacheKey);
@@ -1201,43 +1236,234 @@ async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
     } catch (e) {}
   }
 
-  const initialEntries = extractEntriesFromCurrentPage();
-  const initialTotalPages = extractTotalPagesFromCurrentPage();
+  // 2. Check LanguageModel in window
+  const lm = (typeof LanguageModel !== 'undefined') ? LanguageModel : (window.LanguageModel || window.ai?.languageModel);
+  if (!lm) {
+    renderAIHelpCard('Tarayıcınızda yerleşik Prompt API (Gemini Nano / LanguageModel) bulunamadı.');
+    return;
+  }
 
-  // Show starting progress
   showFloatingProgressPill({
     topicSlug: slug,
     topicTitle: title,
     mode: effectiveMode,
     modeLabel,
     progress: 10,
-    statusText: `${modeLabel}: Sayfalar taranıyor...`
+    statusText: `${modeLabel}: Başlık taranıyor...`
   });
 
-  // Start background task
   try {
-    if (!chrome.runtime?.id) {
-      alert('Eklenti güncellendi. Lütfen Ekşi Sözlük sayfasını yenileyin (F5).');
-      removeFloatingProgressPill();
-      return;
+    // 3. Extract Page 1 from current DOM
+    let allEntries = extractEntriesFromCurrentPage();
+    let totalPages = extractTotalPagesFromCurrentPage();
+
+    console.log(`[ek$tension] Page 1 loaded with ${allEntries.length} entries. Total pages: ${totalPages}`);
+
+    // 4. Crawl remaining pages if totalPages > 1
+    const baseCleanUrl = window.location.href.split('?')[0];
+    const queryParams = effectiveMode === 'popular' ? 'a=popular' : '';
+
+    const getPageUrl = (p) => {
+      if (queryParams) return `${baseCleanUrl}?${queryParams}&p=${p}`;
+      return `${baseCleanUrl}?p=${p}`;
+    };
+
+    if (totalPages > 1) {
+      for (let page = 2; page <= totalPages; page++) {
+        const crawlPercent = 10 + Math.round(((page - 1) / totalPages) * 35);
+        showFloatingProgressPill({
+          topicSlug: slug,
+          topicTitle: title,
+          mode: effectiveMode,
+          modeLabel,
+          progress: crawlPercent,
+          statusText: `${modeLabel}: Sayfa ${page} / ${totalPages} taranıyor (${allEntries.length} entry)...`
+        });
+
+        // Delay 300ms to be safe and polite
+        await new Promise(r => setTimeout(r, 300));
+
+        try {
+          const resp = await fetch(getPageUrl(page), {
+            credentials: 'include',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          });
+          if (resp.ok) {
+            const html = await resp.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const lis = doc.querySelectorAll('#entry-item-list > li');
+            lis.forEach(li => {
+              const id = li.getAttribute('data-id') || li.id?.replace('entry-item-', '') || '';
+              const author = li.getAttribute('data-author') || li.querySelector('.entry-author')?.textContent?.trim() || '';
+              const contentEl = li.querySelector('.content');
+              const dateEl = li.querySelector('.entry-date');
+              const favCount = li.getAttribute('data-favorite-count') || '0';
+              if (contentEl) {
+                allEntries.push({
+                  id,
+                  author,
+                  date: dateEl ? dateEl.textContent.trim() : '',
+                  content: contentEl.innerHTML,
+                  favCount
+                });
+              }
+            });
+          }
+        } catch (pageErr) {
+          console.warn('[ek$tension] Page crawl error:', pageErr);
+        }
+      }
     }
 
-    chrome.runtime.sendMessage({
-      action: 'startTopicSummary',
-      topicUrl: window.location.href,
+    if (allEntries.length === 0) {
+      throw new Error('Özetlenecek entry bulunamadı.');
+    }
+
+    showFloatingProgressPill({
+      topicSlug: slug,
       topicTitle: title,
       mode: effectiveMode,
-      initialEntries,
-      initialTotalPages
-    }, (response) => {
-      if (chrome.runtime.lastError || !response?.success) {
-        console.warn('Could not start summary task:', chrome.runtime.lastError || response?.error);
-      }
+      modeLabel,
+      progress: 50,
+      statusText: `${modeLabel}: ${allEntries.length} entry Gemini Nano ile analiz ediliyor...`
     });
-  } catch (err) {
-    console.warn('[ek$tension] Extension context error:', err);
-    alert('Eklenti güncellendi. Lütfen sayfayı yenileyin (F5).');
+
+    // 5. Clean & Format entries
+    const formattedEntries = allEntries.map((e, idx) => {
+      const cleanContent = e.content
+        .replace(/<br\s*[\/]?>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .trim();
+      return `[Entry #${idx + 1} | Yazar: @${e.author || 'yazar'} | ${e.date || ''}]:\n${cleanContent}`;
+    });
+
+    const CHUNK_SIZE = 12;
+    let finalSummary = '';
+
+    if (formattedEntries.length <= CHUNK_SIZE) {
+      showFloatingProgressPill({
+        topicSlug: slug,
+        topicTitle: title,
+        mode: effectiveMode,
+        modeLabel,
+        progress: 75,
+        statusText: `${modeLabel}: Gemini Nano özet üretiyor...`
+      });
+
+      const prompt = `Başlık: "${title}"
+Toplam Entry Sayısı: ${formattedEntries.length}
+
+Aşağıdaki Ekşi Sözlük başlığında yazılan tüm entry'leri oku ve tarafsız, kapsamlı ve yapılandırılmış bir özet çıkar.
+
+ENTRY'LER:
+${formattedEntries.join('\n\n---\n\n')}
+
+Lütfen yanıtını tam olarak şu Markdown başlıkları altında düzenle:
+📌 **Konu Nedir / Olayın Özeti**
+(Başlığın ve konunun ne hakkında olduğunu 2-3 net cümleyle açıkla)
+
+⚖️ **Farklı Görüşler & Tartışmalar**
+(Yazarlar arasındaki farklı bakış açılarını, savunan ve eleştiren tarafların ana argümanlarını maddeler halinde yaz)
+
+💡 **Öne Çıkan Noktalar & Genel Kanı**
+(Entry'lerde en çok vurgulanan detaylar veya ortak kanı)`;
+
+      finalSummary = await executeLanguageModelPrompt(prompt);
+    } else {
+      // Multi-chunk Map-Reduce
+      const chunks = [];
+      for (let i = 0; i < formattedEntries.length; i += CHUNK_SIZE) {
+        chunks.push(formattedEntries.slice(i, i + CHUNK_SIZE));
+      }
+
+      const chunkSummaries = [];
+      for (let i = 0; i < chunks.length; i++) {
+        const chunkNum = i + 1;
+        const pVal = 50 + Math.round(((i + 1) / chunks.length) * 35);
+        showFloatingProgressPill({
+          topicSlug: slug,
+          topicTitle: title,
+          mode: effectiveMode,
+          modeLabel,
+          progress: pVal,
+          statusText: `${modeLabel}: Blok ${chunkNum}/${chunks.length} analiz ediliyor...`
+        });
+
+        const chunkPrompt = `Başlık: "${title}" (Blok ${chunkNum}/${chunks.length})
+
+Aşağıdaki entry grubunun ana fikirlerini, önemli tespitlerini ve öne çıkan argümanlarını 3-4 madde halinde özetle:
+
+${chunks[i].join('\n\n---\n\n')}`;
+
+        try {
+          const cSum = await executeLanguageModelPrompt(chunkPrompt);
+          if (cSum) chunkSummaries.push(`[Blok ${chunkNum} Özeti]:\n${cSum}`);
+        } catch (cErr) {
+          console.warn('[ek$tension] Chunk error:', cErr);
+        }
+      }
+
+      showFloatingProgressPill({
+        topicSlug: slug,
+        topicTitle: title,
+        mode: effectiveMode,
+        modeLabel,
+        progress: 90,
+        statusText: `${modeLabel}: Nihai özet derleniyor...`
+      });
+
+      const reducePrompt = `Başlık: "${title}"
+Toplam Entry Sayısı: ${allEntries.length}
+
+Aşağıda bu başlık altındaki entry gruplarının ara özetleri verilmiştir:
+
+${chunkSummaries.join('\n\n---\n\n')}
+
+Bu ara özetleri birleştirerek başlığın tamamını kapsayan nihai ve akıcı bir özet oluştur.
+
+Lütfen yanıtını tam olarak şu Markdown başlıkları altında düzenle:
+📌 **Konu Nedir / Olayın Özeti**
+(Başlığın ne hakkında olduğunu 2-3 net cümleyle açıkla)
+
+⚖️ **Farklı Görüşler & Tartışmalar**
+(Yazarlar arasındaki farklı bakış açılarını ve ana argümanları maddeler halinde yaz)
+
+💡 **Öne Çıkan Noktalar & Genel Kanı**
+(Ortak kanı ve dikkat çeken tespitler)`;
+
+      finalSummary = await executeLanguageModelPrompt(reducePrompt);
+    }
+
+    // 6. Finish & Render
     removeFloatingProgressPill();
+
+    const cacheData = {
+      topicSlug: slug,
+      topicTitle: title,
+      summary: finalSummary,
+      totalEntries: allEntries.length,
+      totalPages,
+      mode: effectiveMode,
+      timestamp: Date.now()
+    };
+
+    try {
+      await chrome.storage.local.set({ [cacheKey]: cacheData });
+    } catch (e) {}
+
+    renderSummaryCard(cacheData);
+    showToastNotification('✨ Başlık Özeti Hazır!', `"${title}" başlığı başarıyla özetlendi.`, () => {
+      renderSummaryCard(cacheData);
+    });
+
+  } catch (err) {
+    console.error('[ek$tension] Topic summary error:', err);
+    removeFloatingProgressPill();
+    showToastNotification('⚠️ Özetleme Hatası', err.message || 'Özetleme tamamlanamadı.');
+    if (err.message?.includes('Gemini Nano') || err.message?.includes('LanguageModel') || err.message?.includes('Prompt API')) {
+      renderAIHelpCard(err.message);
+    }
   }
 }
 
