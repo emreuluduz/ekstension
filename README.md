@@ -4,6 +4,12 @@ Chrome extension for Ekşi Sözlük that provides fast trending topics, in-page 
 
 ## Features
 
+### 🤖 Gemini Nano Yerleşik Yapay Zeka (On-Device AI Summarizer)
+- **Başlık & Tartışma Özetleyici (`⚡ Başlığı Özetle`)**: Çok sayfalı başlıklar dahil tüm sayfaları Cloudflare ve hız limitlerine takılmadan arkaplanda güvenle tarar. Chrome'un yerleşik **Gemini Nano** modeli ile tartışmanın ana fikrini, lehte/aleyhte görüşleri ve öne çıkan ortak kanıları tarafsız ve madde madde özetler.
+- **Tekil Entry Özetleyici (`⚡ Özetle`)**: 500 karakterden uzun olan kapsamlı entry'lerin altında çıkan buton ile anında 2-3 maddelik hızlı özet üretir.
+- **Arka Plan Sürekliliği & Çoklu Bildirim**: Kullanıcı sekmeyi veya sayfayı değiştirse bile arka planda tarama ve özetleme devam eder; sağ alttaki yüzen ilerleme kapsülü (Progress Pill), sayfa içi Toast bildirim ve masaüstü Chrome bildirimi ile bilgilendirir.
+- **Geleceğe Hazır & Modüler**: Sıfır maliyetli yerel Gemini Nano üzerinde çalışır; ileride Google AI Studio / Gemini API Key entegrasyonuna hazır mimari ile geliştirilmiştir.
+
 ### In-Page Power Tools (Ekşi Sözlük Web Sitesi Araçları)
 - **Entry Bkz Hover Preview (Entry Önizleme)**: Entry içindeki `(bkz: #173073218)` veya doğrudan entry referans linklerinin üzerine gelindiğinde sayfadan ayrılmadan entry metnini, yazarını ve tarihini gösteren hızlı önizleme kartı.
 - **Media & Link-Only Filter**: Toggle button (`[ 🎬 Sadece Medya & Linkler ]`) on topic pages to instantly filter out text-only entries and show only entries containing images, videos, or external links.
