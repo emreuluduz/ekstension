@@ -1,8 +1,32 @@
 import { MESSAGE_TYPES } from '../utils/constants.js';
 import { parseNumber, formatNumber } from '../utils/helpers.js';
+import { aiService } from '../services/ai/AIService.js';
 
 // Mesajları dinle
-chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'OFFSCREEN_AI_AVAILABILITY') {
+    (async () => {
+      try {
+        const status = await aiService.nanoProvider.isLocalAvailable();
+        sendResponse({ success: true, status });
+      } catch (err) {
+        sendResponse({ success: false, error: err.message });
+      }
+    })();
+    return true;
+  }
+
+  if (message.action === 'OFFSCREEN_AI_SUMMARIZE') {
+    (async () => {
+      try {
+        const summary = await aiService.nanoProvider.summarizeLocal(message.prompt, message.options);
+        sendResponse({ success: true, summary });
+      } catch (err) {
+        sendResponse({ success: false, error: err.message });
+      }
+    })();
+    return true;
+  }
   if (message.action === MESSAGE_TYPES.FETCH_TOPICS) {
     try {
       const titles = await fetchTopicTitles();

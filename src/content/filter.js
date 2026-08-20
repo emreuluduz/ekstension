@@ -1406,11 +1406,61 @@ function injectSingleEntrySummarizeButtons() {
   });
 }
 
+function renderAIHelpCard(errorMessage) {
+  let card = document.getElementById('ekst-ai-summary-card');
+  if (!card) {
+    card = document.createElement('div');
+    card.id = 'ekst-ai-summary-card';
+    card.className = 'ekst-ai-summary-card';
+
+    const container = document.querySelector('.ekstension-media-filter-container');
+    if (container) {
+      container.parentNode.insertBefore(card, container.nextSibling);
+    } else {
+      const topicTitle = document.querySelector('#topic h1');
+      if (topicTitle) {
+        topicTitle.parentNode.insertBefore(card, topicTitle.nextSibling);
+      }
+    }
+  }
+
+  card.innerHTML = `
+    <div class="ekst-summary-header" style="background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border-bottom-color: #fecdd3;">
+      <div class="ekst-summary-header-left">
+        <span class="ekst-summary-title" style="color: #be123c;">⚠️ Gemini Nano (LanguageModel) Kurulumu Gerekli</span>
+      </div>
+      <div class="ekst-summary-header-right">
+        <button class="ekst-summary-close-btn" id="ekst-close-summary-btn" title="Kapat">✕</button>
+      </div>
+    </div>
+    <div class="ekst-summary-body" style="font-size: 13px;">
+      <p><strong>Yerel yapay zeka modeli (Gemini Nano) tarayıcınızda henüz aktif değil veya indirilmedi.</strong></p>
+      <div style="background: rgba(0,0,0,0.03); padding: 12px; border-radius: 8px; margin: 10px 0;">
+        <strong>1 Dakikada Nasıl Aktif Edilir?</strong>
+        <ul style="margin: 8px 0 0 16px; padding: 0;">
+          <li><code>chrome://flags/#prompt-api-for-gemini-nano</code> adresini açıp <strong>Enabled</strong> yapın.</li>
+          <li><code>chrome://flags/#optimization-guide-on-device-model</code> adresini açıp <strong>Enabled BypassPerfRequirement</strong> yapın.</li>
+          <li>Chrome'u yeniden başlatın (Relaunch).</li>
+          <li><code>chrome://components</code> sayfasından <strong>Optimization Guide On Device Model</strong> satırını güncelleyin.</li>
+        </ul>
+      </div>
+      <p style="color: #64748b; font-size: 11px; margin-top: 8px;">Detaylı rehber eklenti dizinindeki <code>docs/GEMINI_NANO_SETUP.md</code> dosyasında mevcuttur.</p>
+    </div>
+  `;
+
+  const closeBtn = card.querySelector('#ekst-close-summary-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => card.remove());
+  }
+
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 // AI Summarizer Mesajlarını Dinle
 chrome.runtime.onMessage.addListener((message) => {
   if (message.action === 'summaryProgress' && message.task) {
     const currentSlug = getCurrentTopicSlug();
-    if (message.task.topicSlug === currentSlug) {
+    if (message.task.topicSlug && message.task.topicSlug.startsWith(currentSlug)) {
       showFloatingProgressPill(message.task);
     }
   }
@@ -1418,7 +1468,7 @@ chrome.runtime.onMessage.addListener((message) => {
   if (message.action === 'summaryCompleted' && message.result) {
     removeFloatingProgressPill();
     const currentSlug = getCurrentTopicSlug();
-    if (message.result.topicSlug === currentSlug) {
+    if (message.result.topicSlug && message.result.topicSlug.startsWith(currentSlug)) {
       renderSummaryCard(message.result);
       showToastNotification(
         '✨ Başlık Özeti Hazır!',
@@ -1433,8 +1483,11 @@ chrome.runtime.onMessage.addListener((message) => {
   if (message.action === 'summaryError') {
     removeFloatingProgressPill();
     const currentSlug = getCurrentTopicSlug();
-    if (message.topicSlug === currentSlug) {
+    if (message.topicSlug && message.topicSlug.startsWith(currentSlug)) {
       showToastNotification('⚠️ Özetleme Hatası', message.error || 'Özetleme tamamlanamadı.');
+      if (message.error?.includes('Gemini Nano') || message.error?.includes('LanguageModel') || message.error?.includes('Prompt API')) {
+        renderAIHelpCard(message.error);
+      }
     }
   }
 });
