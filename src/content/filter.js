@@ -981,6 +981,390 @@ function initEntryHoverPreview() {
   });
 }
 
+// ==========================================================================
+// 6. AI Başlık & Entry Özetleyici (Gemini Nano & Cloud Ready)
+// ==========================================================================
+
+function getCurrentTopicSlug() {
+  try {
+    const pathname = window.location.pathname.replace(/^\//, '');
+    return pathname.split('?')[0] || 'default_topic';
+  } catch (e) {
+    return 'default_topic';
+  }
+}
+
+function getCurrentTopicTitle() {
+  const h1 = document.querySelector('#topic h1');
+  if (!h1) return document.title || 'Ekşi Sözlük Başlığı';
+  const clone = h1.cloneNode(true);
+  const small = clone.querySelector('small');
+  if (small) small.remove();
+  return clone.textContent.trim();
+}
+
+function formatSummaryMarkdown(mdText) {
+  if (!mdText) return '';
+  let html = mdText
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Bold
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+  // Headers: ### or ## or emoji headers
+  html = html.replace(/^###\s+(.*$)/gim, '<div class="ekst-summary-section-title">$1</div>');
+  html = html.replace(/^##\s+(.*$)/gim, '<div class="ekst-summary-section-title">$1</div>');
+  html = html.replace(/^(📌|⚖️|💡)\s*(.*$)/gim, '<div class="ekst-summary-section-title">$1 $2</div>');
+
+  // Bullets
+  const lines = html.split('\n');
+  let inList = false;
+  const processedLines = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('• ')) {
+      if (!inList) {
+        processedLines.push('<ul>');
+        inList = true;
+      }
+      processedLines.push(`<li>${trimmed.replace(/^[-*•]\s+/, '')}</li>`);
+    } else {
+      if (inList) {
+        processedLines.push('</ul>');
+        inList = false;
+      }
+      if (trimmed.length > 0) {
+        processedLines.push(`<p>${trimmed}</p>`);
+      }
+    }
+  }
+  if (inList) {
+    processedLines.push('</ul>');
+  }
+
+  return processedLines.join('');
+}
+
+function injectAISummarizeButton() {
+  const entryList = document.querySelector('#entry-item-list');
+  if (!entryList) return;
+
+  const topicTitle = document.querySelector('#topic h1');
+  if (!topicTitle) return;
+
+  let container = document.querySelector('.ekstension-media-filter-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'ekstension-media-filter-container';
+    topicTitle.parentNode.insertBefore(container, topicTitle.nextSibling);
+  }
+
+  let aiBtn = document.getElementById('ekstension-ai-summary-btn');
+  if (!aiBtn) {
+    aiBtn = document.createElement('button');
+    aiBtn.id = 'ekstension-ai-summary-btn';
+    aiBtn.className = 'ekstension-ai-summary-btn';
+    aiBtn.innerHTML = `⚡ Başlığı Özetle (AI)`;
+    aiBtn.title = 'Tüm sayfaları tarayarak Gemini Nano ile başlığı özetle';
+
+    aiBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      handleAISummarizeClick();
+    });
+
+    container.appendChild(aiBtn);
+  }
+}
+
+async function handleAISummarizeClick(forceRefresh = false) {
+  const slug = getCurrentTopicSlug();
+  const title = getCurrentTopicTitle();
+  const cacheKey = `summary_${slug}`;
+
+  // Check cache first if not forced refresh
+  if (!forceRefresh) {
+    try {
+      const stored = await chrome.storage.local.get(cacheKey);
+      if (stored && stored[cacheKey]) {
+        renderSummaryCard(stored[cacheKey]);
+        return;
+      }
+    } catch (e) {}
+  }
+
+  // Show starting progress
+  showFloatingProgressPill({
+    topicSlug: slug,
+    topicTitle: title,
+    progress: 10,
+    statusText: '1. Sayfa taranıyor...'
+  });
+
+  // Start background task
+  chrome.runtime.sendMessage({
+    action: 'startTopicSummary',
+    topicUrl: window.location.href,
+    topicTitle: title
+  }, (response) => {
+    if (chrome.runtime.lastError || !response?.success) {
+      console.warn('Could not start summary task:', chrome.runtime.lastError || response?.error);
+    }
+  });
+}
+
+function renderSummaryCard(data) {
+  if (!data || !data.summary) return;
+
+  let card = document.getElementById('ekst-ai-summary-card');
+  if (!card) {
+    card = document.createElement('div');
+    card.id = 'ekst-ai-summary-card';
+    card.className = 'ekst-ai-summary-card';
+
+    const container = document.querySelector('.ekstension-media-filter-container');
+    if (container) {
+      container.parentNode.insertBefore(card, container.nextSibling);
+    } else {
+      const topicTitle = document.querySelector('#topic h1');
+      if (topicTitle) {
+        topicTitle.parentNode.insertBefore(card, topicTitle.nextSibling);
+      }
+    }
+  }
+
+  const metaText = data.totalEntries ? `${data.totalEntries} entry (${data.totalPages || 1} sayfa)` : '';
+
+  card.innerHTML = `
+    <div class="ekst-summary-header">
+      <div class="ekst-summary-header-left">
+        <span class="ekst-summary-title">⚡ AI Başlık Özeti</span>
+        <span class="ekst-summary-badge">Gemini Nano</span>
+        ${metaText ? `<span class="ekst-summary-meta">• ${metaText}</span>` : ''}
+      </div>
+      <div class="ekst-summary-header-right">
+        <button class="ekst-summary-action-btn" id="ekst-copy-summary-btn" title="Metni Kopyala">
+          📋 Kopyala
+        </button>
+        <button class="ekst-summary-action-btn" id="ekst-refresh-summary-btn" title="Yeniden Özetle">
+          🔄 Yenile
+        </button>
+        <button class="ekst-summary-close-btn" id="ekst-close-summary-btn" title="Kapat">✕</button>
+      </div>
+    </div>
+    <div class="ekst-summary-body">
+      ${formatSummaryMarkdown(data.summary)}
+    </div>
+  `;
+
+  // Event handlers
+  const copyBtn = card.querySelector('#ekst-copy-summary-btn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(data.summary).then(() => {
+        copyBtn.textContent = '✓ Kopyalandı!';
+        setTimeout(() => {
+          copyBtn.innerHTML = '📋 Kopyala';
+        }, 2000);
+      });
+    });
+  }
+
+  const refreshBtn = card.querySelector('#ekst-refresh-summary-btn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', () => {
+      handleAISummarizeClick(true);
+    });
+  }
+
+  const closeBtn = card.querySelector('#ekst-close-summary-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      card.remove();
+    });
+  }
+
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showFloatingProgressPill(task) {
+  let pill = document.getElementById('ekst-floating-pill');
+  if (!pill) {
+    pill = document.createElement('div');
+    pill.id = 'ekst-floating-pill';
+    pill.className = 'ekst-floating-pill';
+    document.body.appendChild(pill);
+  }
+
+  const percent = task.progress || 10;
+  const statusText = task.statusText || 'Özetleniyor...';
+
+  pill.innerHTML = `
+    <div class="ekst-pill-spinner"></div>
+    <div class="ekst-pill-text">${statusText}</div>
+    <span class="ekst-pill-percent">%${percent}</span>
+    <button class="ekst-pill-cancel" id="ekst-pill-cancel-btn" title="İptal Et">✕</button>
+  `;
+
+  const cancelBtn = pill.querySelector('#ekst-pill-cancel-btn');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      chrome.runtime.sendMessage({ action: 'cancelTopicSummary' });
+      removeFloatingProgressPill();
+    });
+  }
+
+  pill.onclick = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+}
+
+function removeFloatingProgressPill() {
+  const pill = document.getElementById('ekst-floating-pill');
+  if (pill) {
+    pill.remove();
+  }
+}
+
+function showToastNotification(title, message, onClick) {
+  let container = document.querySelector('.ekst-toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'ekst-toast-container';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = 'ekst-toast';
+  toast.innerHTML = `
+    <div class="ekst-toast-icon">✨</div>
+    <div class="ekst-toast-content">
+      <div class="ekst-toast-title">${title}</div>
+      <div class="ekst-toast-desc">${message}</div>
+    </div>
+  `;
+
+  toast.addEventListener('click', () => {
+    if (typeof onClick === 'function') onClick();
+    toast.classList.add('hiding');
+    setTimeout(() => toast.remove(), 200);
+  });
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.classList.add('hiding');
+      setTimeout(() => toast.remove(), 200);
+    }
+  }, 6000);
+}
+
+function injectSingleEntrySummarizeButtons() {
+  const entries = document.querySelectorAll('#entry-item-list > li');
+  if (!entries || entries.length === 0) return;
+
+  entries.forEach(entry => {
+    if (entry.querySelector('.ekst-single-summary-btn')) return;
+
+    const content = entry.querySelector('.content');
+    if (!content) return;
+
+    const textLength = content.textContent.trim().length;
+    if (textLength < 500) return; // Only entries >500 chars
+
+    const footer = entry.querySelector('.info, .feedback, footer') || content;
+    const author = entry.getAttribute('data-author') || '';
+
+    const btn = document.createElement('button');
+    btn.className = 'ekst-single-summary-btn';
+    btn.innerHTML = '⚡ Özetle';
+    btn.title = 'Bu uzun entry\'yi Gemini Nano ile kısaca özetle';
+
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      let box = entry.querySelector('.ekst-single-summary-box');
+      if (box) {
+        box.remove();
+        btn.innerHTML = '⚡ Özetle';
+        return;
+      }
+
+      btn.innerHTML = '⏳ Özetleniyor...';
+      btn.disabled = true;
+
+      try {
+        chrome.runtime.sendMessage({
+          action: 'summarizeSingleEntry',
+          entryText: content.textContent.trim(),
+          author
+        }, (response) => {
+          btn.disabled = false;
+          if (response && response.success && response.summary) {
+            btn.innerHTML = '⚡ Özeti Gizle';
+            box = document.createElement('div');
+            box.className = 'ekst-single-summary-box';
+            box.innerHTML = `
+              <div class="ekst-single-summary-box-header">
+                <span>⚡ AI Entry Özeti (@${author})</span>
+              </div>
+              <div class="ekst-single-summary-box-body">
+                ${formatSummaryMarkdown(response.summary)}
+              </div>
+            `;
+            content.parentNode.insertBefore(box, content.nextSibling);
+          } else {
+            btn.innerHTML = '⚠️ Özetlenemedi';
+            setTimeout(() => { btn.innerHTML = '⚡ Özetle'; }, 3000);
+          }
+        });
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = '⚠️ Hata';
+        setTimeout(() => { btn.innerHTML = '⚡ Özetle'; }, 3000);
+      }
+    });
+
+    footer.appendChild(btn);
+  });
+}
+
+// AI Summarizer Mesajlarını Dinle
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.action === 'summaryProgress' && message.task) {
+    const currentSlug = getCurrentTopicSlug();
+    if (message.task.topicSlug === currentSlug) {
+      showFloatingProgressPill(message.task);
+    }
+  }
+
+  if (message.action === 'summaryCompleted' && message.result) {
+    removeFloatingProgressPill();
+    const currentSlug = getCurrentTopicSlug();
+    if (message.result.topicSlug === currentSlug) {
+      renderSummaryCard(message.result);
+      showToastNotification(
+        '✨ Başlık Özeti Hazır!',
+        `"${message.result.topicTitle}" başlığı başarıyla özetlendi.`,
+        () => {
+          renderSummaryCard(message.result);
+        }
+      );
+    }
+  }
+
+  if (message.action === 'summaryError') {
+    removeFloatingProgressPill();
+    const currentSlug = getCurrentTopicSlug();
+    if (message.topicSlug === currentSlug) {
+      showToastNotification('⚠️ Özetleme Hatası', message.error || 'Özetleme tamamlanamadı.');
+    }
+  }
+});
+
 // Tüm Sayfa İçi Araçları Çalıştır
 function runAllEnhancements() {
   if (isProcessing) return;
@@ -991,6 +1375,8 @@ function runAllEnhancements() {
     applyAuthorBlocking();
     applyMediaPreviews();
     injectMediaFilterButton();
+    injectAISummarizeButton();
+    injectSingleEntrySummarizeButtons();
     if (state.mediaOnlyActive) {
       applyMediaOnlyFilter();
     }
@@ -1030,6 +1416,17 @@ function initialize() {
   chrome.runtime.sendMessage({ action: 'getBlockedAuthors' }, (authors) => {
     state.blockedAuthors = authors || [];
     applyAuthorBlocking();
+  });
+
+  // Restore active summary task if ongoing
+  chrome.storage.local.get('active_summary_task', (stored) => {
+    const task = stored?.active_summary_task;
+    if (task && task.status === 'running') {
+      const currentSlug = getCurrentTopicSlug();
+      if (task.topicSlug === currentSlug) {
+        showFloatingProgressPill(task);
+      }
+    }
   });
 
   initEntryHoverPreview();
