@@ -1141,6 +1141,44 @@ function toggleAIDropdownMenu(wrapper) {
   wrapper.appendChild(menu);
 }
 
+function extractEntriesFromCurrentPage() {
+  const lis = document.querySelectorAll('#entry-item-list > li');
+  const entries = [];
+  lis.forEach(li => {
+    const id = li.getAttribute('data-id') || li.id?.replace('entry-item-', '') || '';
+    const author = li.getAttribute('data-author') || li.querySelector('.entry-author')?.textContent?.trim() || '';
+    const contentEl = li.querySelector('.content');
+    const dateEl = li.querySelector('.entry-date');
+    const favCount = li.getAttribute('data-favorite-count') || '0';
+    if (contentEl) {
+      entries.push({
+        id,
+        author,
+        date: dateEl ? dateEl.textContent.trim() : '',
+        content: contentEl.innerHTML,
+        favCount
+      });
+    }
+  });
+  return entries;
+}
+
+function extractTotalPagesFromCurrentPage() {
+  const pager = document.querySelector('.pager');
+  if (pager && pager.getAttribute('data-pagecount')) {
+    return parseInt(pager.getAttribute('data-pagecount'), 10) || 1;
+  }
+  const lastLink = document.querySelector('.pager a.last');
+  if (lastLink) {
+    return parseInt(lastLink.textContent.trim(), 10) || 1;
+  }
+  const select = document.querySelector('select#select-page');
+  if (select && select.options.length > 0) {
+    return select.options.length;
+  }
+  return 1;
+}
+
 async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
   let effectiveMode = mode;
   if (effectiveMode === 'auto') {
@@ -1163,6 +1201,9 @@ async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
     } catch (e) {}
   }
 
+  const initialEntries = extractEntriesFromCurrentPage();
+  const initialTotalPages = extractTotalPagesFromCurrentPage();
+
   // Show starting progress
   showFloatingProgressPill({
     topicSlug: slug,
@@ -1170,7 +1211,7 @@ async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
     mode: effectiveMode,
     modeLabel,
     progress: 10,
-    statusText: `${modeLabel}: 1. Sayfa taranıyor...`
+    statusText: `${modeLabel}: Sayfalar taranıyor...`
   });
 
   // Start background task
@@ -1185,7 +1226,9 @@ async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
       action: 'startTopicSummary',
       topicUrl: window.location.href,
       topicTitle: title,
-      mode: effectiveMode
+      mode: effectiveMode,
+      initialEntries,
+      initialTotalPages
     }, (response) => {
       if (chrome.runtime.lastError || !response?.success) {
         console.warn('Could not start summary task:', chrome.runtime.lastError || response?.error);
@@ -1506,35 +1549,26 @@ function renderAIHelpCard(errorMessage) {
 // AI Summarizer Mesajlarını Dinle
 chrome.runtime.onMessage.addListener((message) => {
   if (message.action === 'summaryProgress' && message.task) {
-    const currentSlug = getCurrentTopicSlug();
-    if (message.task.topicSlug && message.task.topicSlug.startsWith(currentSlug)) {
-      showFloatingProgressPill(message.task);
-    }
+    showFloatingProgressPill(message.task);
   }
 
   if (message.action === 'summaryCompleted' && message.result) {
     removeFloatingProgressPill();
-    const currentSlug = getCurrentTopicSlug();
-    if (message.result.topicSlug && message.result.topicSlug.startsWith(currentSlug)) {
-      renderSummaryCard(message.result);
-      showToastNotification(
-        '✨ Başlık Özeti Hazır!',
-        `"${message.result.topicTitle}" başlığı başarıyla özetlendi.`,
-        () => {
-          renderSummaryCard(message.result);
-        }
-      );
-    }
+    renderSummaryCard(message.result);
+    showToastNotification(
+      '✨ Başlık Özeti Hazır!',
+      `"${message.result.topicTitle}" başlığı başarıyla özetlendi.`,
+      () => {
+        renderSummaryCard(message.result);
+      }
+    );
   }
 
   if (message.action === 'summaryError') {
     removeFloatingProgressPill();
-    const currentSlug = getCurrentTopicSlug();
-    if (message.topicSlug && message.topicSlug.startsWith(currentSlug)) {
-      showToastNotification('⚠️ Özetleme Hatası', message.error || 'Özetleme tamamlanamadı.');
-      if (message.error?.includes('Gemini Nano') || message.error?.includes('LanguageModel') || message.error?.includes('Prompt API')) {
-        renderAIHelpCard(message.error);
-      }
+    showToastNotification('⚠️ Özetleme Hatası', message.error || 'Özetleme tamamlanamadı.');
+    if (message.error?.includes('Gemini Nano') || message.error?.includes('LanguageModel') || message.error?.includes('Prompt API')) {
+      renderAIHelpCard(message.error);
     }
   }
 });

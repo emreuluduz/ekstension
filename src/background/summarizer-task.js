@@ -36,7 +36,7 @@ class SummarizerTaskManager {
     let totalPages = 1;
 
     try {
-      // Extract page count from data-pagecount or select options or pager
+      // 1. Extract total page count
       const pageCountMatch = html.match(/data-pagecount=["'](\d+)["']/i) ||
                              html.match(/class=["']pager["'][^>]*data-pagecount=["'](\d+)["']/i) ||
                              html.match(/<a[^>]*class=["']last["'][^>]*>(\d+)<\/a>/i);
@@ -44,7 +44,6 @@ class SummarizerTaskManager {
       if (pageCountMatch && pageCountMatch[1]) {
         totalPages = parseInt(pageCountMatch[1], 10) || 1;
       } else {
-        // Check select-page options
         const selectMatch = html.match(/<select[^>]*id=["']select-page["'][^>]*>([\s\S]*?)<\/select>/i);
         if (selectMatch && selectMatch[1]) {
           const optionValues = [...selectMatch[1].matchAll(/<option[^>]*value=["'](\d+)["']/gi)].map(m => parseInt(m[1], 10));
@@ -54,37 +53,27 @@ class SummarizerTaskManager {
         }
       }
 
-      // Extract entries: <li data-id="..." data-author="..." ...> <div class="content">...</div> ... </li>
-      // Using regex block extraction for service worker compatibility
-      const entryRegex = /<li[^>]*data-id=["'](\d+)["'][^>]*data-author=["']([^"']*)["'][^>]*>([\s\S]*?)<\/li>/gi;
-      let match;
+      // 2. Extract entry items (attribute-order independent)
+      const listMatch = html.match(/<ul[^>]*id=["']entry-item-list["'][^>]*>([\s\S]*?)<\/ul>/i);
+      const searchHtml = listMatch ? listMatch[1] : html;
 
-      while ((match = entryRegex.exec(html)) !== null) {
-        const id = match[1];
-        const author = match[2];
-        const innerContent = match[3];
+      const rawItems = searchHtml.split(/<li\b/i).slice(1);
+      for (const raw of rawItems) {
+        const contentMatch = raw.match(/<div[^>]*class=["']content["'][^>]*>([\s\S]*?)<\/div>/i);
+        if (!contentMatch) continue;
 
-        // Content
-        const contentMatch = innerContent.match(/<div[^>]*class=["']content["'][^>]*>([\s\S]*?)<\/div>/i);
-        const content = contentMatch ? contentMatch[1].trim() : '';
+        const idMatch = raw.match(/data-id=["'](\d+)["']/i) || raw.match(/id=["']entry-item-(\d+)["']/i);
+        const authorMatch = raw.match(/data-author=["']([^"']*)["']/i) || raw.match(/class=["'][^"']*entry-author[^"']*["'][^>]*>([^<]+)<\/a>/i);
+        const dateMatch = raw.match(/class=["'][^"']*entry-date[^"']*["'][^>]*>([^<]+)<\/a>/i);
+        const favMatch = raw.match(/data-favorite-count=["'](\d+)["']/i);
 
-        // Date
-        const dateMatch = innerContent.match(/<a[^>]*class=["'][^"']*entry-date[^"']*["'][^>]*>([\s\S]*?)<\/a>/i);
-        const date = dateMatch ? dateMatch[1].replace(/<[^>]+>/g, '').trim() : '';
-
-        // Favorite count
-        const favMatch = innerContent.match(/data-favorite-count=["'](\d+)["']/i);
-        const favCount = favMatch ? favMatch[1] : '0';
-
-        if (content) {
-          entries.push({
-            id,
-            author,
-            date,
-            content,
-            favCount
-          });
-        }
+        entries.push({
+          id: idMatch ? idMatch[1] : '',
+          author: authorMatch ? authorMatch[1].trim() : '',
+          date: dateMatch ? dateMatch[1].trim() : '',
+          content: contentMatch[1].trim(),
+          favCount: favMatch ? favMatch[1] : '0'
+        });
       }
     } catch (e) {
       console.error('[SummarizerTaskManager] Error parsing HTML:', e);
@@ -134,7 +123,7 @@ class SummarizerTaskManager {
   /**
    * Start topic summarization
    */
-  async startTopicSummary(topicUrl, topicTitle, sourceTabId = null, mode = 'auto') {
+  async startTopicSummary(topicUrl, topicTitle, sourceTabId = null, mode = 'auto', initialEntries = null, initialTotalPages = null) {
     let effectiveMode = mode;
     let queryParams = '';
 
@@ -172,11 +161,11 @@ class SummarizerTaskManager {
       modeLabel,
       status: 'running',
       stage: 'starting',
-      progress: 5,
+      progress: 10,
       statusText: `${modeLabel}: Başlık bilgileri alınıyor...`,
-      totalPages: 1,
+      totalPages: initialTotalPages || 1,
       currentPage: 0,
-      totalEntries: 0,
+      totalEntries: initialEntries ? initialEntries.length : 0,
       cancelled: false,
       sourceTabId
     };
@@ -184,9 +173,6 @@ class SummarizerTaskManager {
     this.activeTask = task;
 
     try {
-      await this.updateProgress(task, 10, `${modeLabel}: 1. Sayfa taranıyor...`, 'crawling');
-
-      // 1. Fetch First Page
       const baseCleanUrl = topicUrl.split('?')[0];
       const getPageUrl = (page) => {
         if (queryParams) {
@@ -195,20 +181,32 @@ class SummarizerTaskManager {
         return `${baseCleanUrl}?p=${page}`;
       };
 
-      const firstPageResponse = await fetch(getPageUrl(1), {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-      });
+      let allEntries = [];
+      let totalPages = initialTotalPages || 1;
 
-      if (!firstPageResponse.ok) {
-        throw new Error(`Sayfa yüklenemedi (HTTP ${firstPageResponse.status})`);
+      // Use initial entries if available from current page and in appropriate mode
+      if (initialEntries && initialEntries.length > 0) {
+        allEntries = [...initialEntries];
+        totalPages = initialTotalPages || 1;
+        task.totalPages = totalPages;
+        console.log(`[SummarizerTask] Using ${allEntries.length} initial entries from DOM (Total pages: ${totalPages})`);
+      } else {
+        await this.updateProgress(task, 15, `${modeLabel}: 1. Sayfa taranıyor...`, 'crawling');
+        try {
+          const firstPageResponse = await fetch(getPageUrl(1), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          });
+          if (firstPageResponse.ok) {
+            const firstPageHtml = await firstPageResponse.text();
+            const parsedFirstPage = this.parseTopicHtml(firstPageHtml);
+            allEntries = [...parsedFirstPage.entries];
+            totalPages = parsedFirstPage.totalPages;
+            task.totalPages = totalPages;
+          }
+        } catch (fetchErr) {
+          console.warn('[SummarizerTask] Error fetching first page:', fetchErr);
+        }
       }
-
-      const firstPageHtml = await firstPageResponse.text();
-      const parsedFirstPage = this.parseTopicHtml(firstPageHtml);
-
-      let allEntries = [...parsedFirstPage.entries];
-      const totalPages = parsedFirstPage.totalPages;
-      task.totalPages = totalPages;
 
       // 2. Sequential Crawl of remaining pages if any
       if (totalPages > 1) {
@@ -219,7 +217,7 @@ class SummarizerTaskManager {
             return;
           }
 
-          const crawlPercent = 10 + Math.round(((page - 1) / totalPages) * 40);
+          const crawlPercent = 15 + Math.round(((page - 1) / totalPages) * 35);
           await this.updateProgress(
             task,
             crawlPercent,
