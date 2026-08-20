@@ -55,7 +55,7 @@ function getDirectImageUrl(url) {
 
     // 2. Ekşi Sözlük dahili görsel yolları: eksisozluk.com/img/..., /gorsel/...
     if ((host.includes('eksisozluk') || host.includes('eksisozluk1923') || host.includes('eksisozluk2023') || host.includes('eksisozluk111')) &&
-        (pathname.startsWith('/img/') || pathname.startsWith('/gorsel/'))) {
+      (pathname.startsWith('/img/') || pathname.startsWith('/gorsel/'))) {
       return url;
     }
 
@@ -124,7 +124,7 @@ function extractEksiImageId(url) {
       const parts = pathname.split('/').filter(Boolean);
       return parts[parts.length - 1] || null;
     }
-  } catch (e) {}
+  } catch (e) { }
   return null;
 }
 
@@ -166,7 +166,7 @@ function resolveEksiImageViaIframe(id) {
             return;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     };
 
     (document.body || document.documentElement).appendChild(iframe);
@@ -203,14 +203,14 @@ async function resolveMediaUrl(url) {
       if (res.ok) {
         const html = await res.text();
         const match = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
-                      html.match(/<img\s+id=["']image["']\s+src=["']([^"']+)["']/i) ||
-                      html.match(/<a\s+id=["']image-zoom["']\s+href=["']([^"']+)["']/i);
+          html.match(/<img\s+id=["']image["']\s+src=["']([^"']+)["']/i) ||
+          html.match(/<a\s+id=["']image-zoom["']\s+href=["']([^"']+)["']/i);
         if (match && match[1]) {
           imageResolvedCache.set(url, match[1]);
           return match[1];
         }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // 1b. Same-Origin Iframe fallback (Cloudflare Challenge/Bot Koruması durumunda)
     try {
@@ -219,7 +219,7 @@ async function resolveMediaUrl(url) {
         imageResolvedCache.set(url, iframeSrc);
         return iframeSrc;
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // 2. Harici HTML tabanlı görsel siteleri için Background Worker Fetch
@@ -231,7 +231,7 @@ async function resolveMediaUrl(url) {
       imageResolvedCache.set(url, bgRes.imageUrl);
       return bgRes.imageUrl;
     }
-  } catch (err) {}
+  } catch (err) { }
 
   // 3. Fallback regex dönüşümü (Hizliresim, Imgur vs.)
   const direct = getDirectImageUrl(url);
@@ -409,7 +409,7 @@ function applyMediaPreviews() {
     links.forEach(link => {
       link.setAttribute('data-ekstension-processed', 'true');
       const href = link.href || link.getAttribute('href') || '';
-      
+
       const isImg = isImageUrl(href);
       const ytId = extractYouTubeId(href);
 
@@ -623,8 +623,8 @@ function extractEntryIdFromElement(el) {
 // Mevcut sayfadaki DOM'dan Entry Bilgilerini Oku (0ms gecikme)
 function getEntryDataFromLocalDOM(entryId) {
   const entryLi = document.querySelector(`#entry-item-list > li[data-id="${entryId}"]`) ||
-                  document.querySelector(`li[data-id="${entryId}"]`) ||
-                  document.querySelector(`#entry-item-${entryId}`);
+    document.querySelector(`li[data-id="${entryId}"]`) ||
+    document.querySelector(`#entry-item-${entryId}`);
   if (!entryLi) return null;
 
   const contentEl = entryLi.querySelector('.content');
@@ -680,9 +680,9 @@ async function fetchRemoteEntryData(entryId) {
     const doc = parser.parseFromString(html, 'text/html');
 
     const entryLi = doc.querySelector(`#entry-item-list > li[data-id="${entryId}"]`) ||
-                    doc.querySelector('#entry-item-list > li') ||
-                    doc.querySelector(`li[data-id="${entryId}"]`) ||
-                    doc.querySelector('li[data-id]');
+      doc.querySelector('#entry-item-list > li') ||
+      doc.querySelector(`li[data-id="${entryId}"]`) ||
+      doc.querySelector('li[data-id]');
 
     const contentEl = entryLi ? entryLi.querySelector('.content') : doc.querySelector('.content');
     if (!contentEl) {
@@ -1077,7 +1077,7 @@ function injectAISummarizeButton() {
     const aiBtn = document.createElement('button');
     aiBtn.id = 'ekstension-ai-summary-btn';
     aiBtn.className = 'ekstension-ai-summary-btn';
-    
+
     const isFiltered = isTopicFilteredView();
     aiBtn.innerHTML = isFiltered ? `⚡ Başlığı Özetle (AI) <span style="font-size:10px;margin-left:2px;">▾</span>` : `⚡ Başlığı Özetle (AI)`;
     aiBtn.title = isFiltered ? 'Özetleme kapsamı seç (Gündemdekiler veya Tüm Başlık)' : 'Tüm sayfaları tarayarak Gemini Nano ile başlığı özetle';
@@ -1179,6 +1179,8 @@ function extractTotalPagesFromCurrentPage() {
   return 1;
 }
 
+const GEMINI_MODEL = 'gemini-2.0-flash-lite';
+
 async function getStoredGeminiApiKey() {
   try {
     const res = await chrome.storage.local.get('gemini_api_key');
@@ -1196,7 +1198,7 @@ async function callGeminiFlashAPI(promptText, systemInstruction = '') {
 
   const sysPrompt = systemInstruction || 'Sen Ekşi Sözlük entry ve tartışmalarını tarafsız, akıcı ve yapılandırılmış şekilde özetleyen bir yapay zeka asistanısın. Yanıtlarını her zaman Türkçe, net ve madde madde Markdown formatında üret.';
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -1251,7 +1253,7 @@ function renderAPIKeySetupCard(onSavedCallback) {
       </div>
     </div>
     <div class="ekst-summary-body" style="font-size: 13px; color: #334155;">
-      <p style="margin-top:0;">Ekşi Sözlük başlıklarını ve entry'leri <strong>Gemini 1.5 Flash</strong> ile 1 saniyede ücretsiz özetlemek için Google AI Studio API anahtarınızı girin.</p>
+      <p style="margin-top:0;">Ekşi Sözlük başlıklarını ve entry'leri <strong>Gemini 2.0 Flash Lite</strong> ile 1 saniyede ücretsiz özetlemek için Google AI Studio API anahtarınızı girin.</p>
       
       <div style="background: rgba(124, 58, 237, 0.05); padding: 12px 14px; border-radius: 8px; margin: 12px 0; border: 1px dashed rgba(124, 58, 237, 0.3);">
         <div style="font-weight: 600; margin-bottom: 4px; color: #5b21b6;">💡 10 Saniyede Ücretsiz Key Nasıl Alınır?</div>
@@ -1295,7 +1297,7 @@ function renderAPIKeySetupCard(onSavedCallback) {
       saveBtn.disabled = true;
 
       try {
-        const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(val)}`;
+        const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(val)}`;
         const resp = await fetch(testUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1340,7 +1342,7 @@ async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
         renderSummaryCard(stored[cacheKey]);
         return;
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // 2. Check API Key
@@ -1480,7 +1482,7 @@ Lütfen yanıtını tam olarak şu Markdown başlıkları altında düzenle:
 
     try {
       await chrome.storage.local.set({ [cacheKey]: cacheData });
-    } catch (e) {}
+    } catch (e) { }
 
     renderSummaryCard(cacheData);
     showToastNotification('✨ Başlık Özeti Hazır!', `"${title}" başlığı başarıyla özetlendi.`, () => {
@@ -1519,8 +1521,8 @@ function renderSummaryCard(data) {
   }
 
   const metaText = data.totalEntries ? `${data.totalEntries} entry (${data.totalPages || 1} sayfa)` : '';
-  const modeBadge = data.mode === 'popular' 
-    ? `<span class="ekst-summary-badge" style="background:#ea580c">Gündem (Bugün)</span>` 
+  const modeBadge = data.mode === 'popular'
+    ? `<span class="ekst-summary-badge" style="background:#ea580c">Gündem (Bugün)</span>`
     : `<span class="ekst-summary-badge" style="background:#7c3aed">Gemini 1.5 Flash</span>`;
 
   card.innerHTML = `
@@ -1781,8 +1783,8 @@ function notifyPageReady() {
   const isRealEksi = !!document.querySelector('#container, #top-navigation, ul.topic-list, #content-body, #logo, header, #topic');
   if (isRealEksi) {
     try {
-      chrome.runtime.sendMessage({ action: 'EKSI_PAGE_READY' }).catch(() => {});
-    } catch (e) {}
+      chrome.runtime.sendMessage({ action: 'EKSI_PAGE_READY' }).catch(() => { });
+    } catch (e) { }
   }
 }
 
@@ -1849,10 +1851,10 @@ const observer = new MutationObserver((mutations) => {
 
     if (mutation.addedNodes.length > 0) {
       for (const node of mutation.addedNodes) {
-        if (node.nodeType === 1 && 
-            !node.classList?.contains('ekstension-preview-btn') && 
-            !node.classList?.contains('ekstension-media-container') &&
-            node.id !== 'ekstension-entry-popover') {
+        if (node.nodeType === 1 &&
+          !node.classList?.contains('ekstension-preview-btn') &&
+          !node.classList?.contains('ekstension-media-container') &&
+          node.id !== 'ekstension-entry-popover') {
           relevantMutation = true;
           break;
         }

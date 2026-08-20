@@ -23,7 +23,7 @@ export class GeminiAPIProvider extends BaseAIProvider {
           return this.apiKey;
         }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     return '';
   }
@@ -38,8 +38,8 @@ export class GeminiAPIProvider extends BaseAIProvider {
     return {
       available: hasKey,
       status: hasKey ? 'ready' : 'key_missing',
-      reason: hasKey 
-        ? 'Gemini API Key hazır.' 
+      reason: hasKey
+        ? 'Gemini API Key hazır.'
         : 'Gemini API Key bulunamadı. Lütfen Google AI Studio\'dan aldığınız ücretsiz API anahtarınızı girin.'
     };
   }
@@ -51,7 +51,7 @@ export class GeminiAPIProvider extends BaseAIProvider {
     const key = testKey || await this.getApiKey();
     if (!key) throw new Error('API Anahtarı boş olamaz.');
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(key)}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${encodeURIComponent(key)}`;
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -70,7 +70,7 @@ export class GeminiAPIProvider extends BaseAIProvider {
   }
 
   /**
-   * Summarize prompt using Google Gemini 1.5 Flash
+   * Summarize prompt using Google Gemini
    */
   async summarize(prompt, options = {}) {
     const key = await this.getApiKey();
@@ -81,7 +81,7 @@ export class GeminiAPIProvider extends BaseAIProvider {
     const systemInstruction = options.systemPrompt || 
       'Sen Ekşi Sözlük entry ve tartışmalarını tarafsız, akıcı ve yapılandırılmış şekilde özetleyen bir yapay zeka asistanısın. Yanıtlarını her zaman Türkçe, net ve madde madde Markdown formatında üret.';
 
-    const modelName = options.model || 'gemini-1.5-flash';
+    const modelName = (options.model || 'gemini-2.0-flash-lite').trim();
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(key)}`;
 
     const response = await fetch(url, {

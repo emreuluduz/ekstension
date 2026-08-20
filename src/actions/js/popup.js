@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         saveGeminiBtn.disabled = true;
 
         try {
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(val)}`;
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${encodeURIComponent(val)}`;
           const resp = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const isOpening = UI.elements.settingsPanel.classList.contains('hidden');
       UI.elements.settingsPanel.classList.toggle('hidden');
-      
+
       const content = document.querySelector('.content');
       if (isOpening) {
         // Panel açılıyor -> Gündem ve arama sonuçlarını gizle
@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      
+
       btn.classList.add('active');
       const targetContent = document.querySelector(`.tab-content[data-tab="${btn.dataset.tab}"]`);
       if (targetContent) {
@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     input.addEventListener('change', async (e) => {
       const newTheme = e.target.value;
       await Storage.set(STORAGE_KEYS.THEME, newTheme);
-      
+
       if (newTheme === 'auto') {
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         document.body.dataset.theme = prefersDark ? 'dark' : 'light';
@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const searchText = e.target.value.trim();
       const gundemList = document.getElementById('gundem-list');
       const searchResultsContainer = document.getElementById('search-results-container');
-      
+
       if (searchTimeout) {
         clearTimeout(searchTimeout);
       }
@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!searchPanel) return;
     try {
       searchPanel.classList.add('searching');
-      
+
       let searchResultsContainer = document.getElementById('search-results-container');
       if (searchResultsContainer) {
         searchResultsContainer.textContent = '';
@@ -422,33 +422,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   function displaySearchResults(results) {
     const searchResultsContainer = document.getElementById('search-results-container');
     if (!searchResultsContainer) return;
-    
+
     searchResultsContainer.innerHTML = '';
-    
+
     if (results && (results.Titles?.length > 0 || results.Nicks?.length > 0)) {
       if (results.Titles?.length > 0) {
         const titlesSection = document.createElement('div');
         titlesSection.className = 'search-section';
-        
+
         const header = document.createElement('div');
         header.className = 'search-section-header';
         header.textContent = 'Başlıklar';
         titlesSection.appendChild(header);
-        
+
         results.Titles.forEach(title => {
           const resultItem = document.createElement('div');
           resultItem.className = 'gundem-item';
-          
+
           const topicContent = document.createElement('div');
           topicContent.className = 'topic-content';
-          
+
           const titleSpan = document.createElement('span');
           titleSpan.className = 'title';
           titleSpan.textContent = title;
-          
+
           topicContent.appendChild(titleSpan);
           resultItem.appendChild(topicContent);
-          
+
           resultItem.addEventListener('click', () => {
             const query = turkishToLower(title);
             chrome.tabs.create({ url: `https://eksisozluk.com/?q=${encodeURIComponent(query)}` });
@@ -461,26 +461,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (results.Nicks?.length > 0) {
         const nicksSection = document.createElement('div');
         nicksSection.className = 'search-section';
-        
+
         const header = document.createElement('div');
         header.className = 'search-section-header';
         header.textContent = 'Yazarlar';
         nicksSection.appendChild(header);
-        
+
         results.Nicks.forEach(nick => {
           const resultItem = document.createElement('div');
           resultItem.className = 'gundem-item';
-          
+
           const topicContent = document.createElement('div');
           topicContent.className = 'topic-content';
-          
+
           const titleSpan = document.createElement('span');
           titleSpan.className = 'title';
           titleSpan.textContent = nick;
-          
+
           topicContent.appendChild(titleSpan);
           resultItem.appendChild(topicContent);
-          
+
           resultItem.addEventListener('click', () => {
             chrome.tabs.create({ url: `https://eksisozluk.com/biri/${encodeURIComponent(nick)}` });
           });
