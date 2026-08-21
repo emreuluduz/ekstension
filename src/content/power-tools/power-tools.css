@@ -719,6 +719,17 @@ body[data-theme="dark"] .ekstension-bookmark-card-content {
   pointer-events: auto !important;
 }
 
+.ekstension-stream-toast.clickable {
+  cursor: pointer !important;
+  user-select: none !important;
+}
+
+.ekstension-stream-toast.clickable:hover {
+  transform: translateX(-50%) translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3) !important;
+  filter: brightness(1.08) !important;
+}
+
 /* Page Divider & Entrance Animation */
 .ekstension-page-divider {
   display: flex !important;

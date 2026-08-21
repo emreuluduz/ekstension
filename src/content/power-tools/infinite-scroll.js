@@ -298,7 +298,14 @@
       });
 
       if (newIncomingElements.length > 0) {
-        showToastNotification(`🔴 Canlı Akış: +${newIncomingElements.length} yeni entry geldi`);
+        const firstNewEl = newIncomingElements[0];
+        showToastNotification(`🔴 Canlı Akış: +${newIncomingElements.length} yeni entry geldi (Görmek için tıkla 👇)`, () => {
+          if (firstNewEl && document.body.contains(firstNewEl)) {
+            firstNewEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else {
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+          }
+        });
         window.dispatchEvent(new CustomEvent('ekstension:entries-added', {
           detail: { newEntries: newIncomingElements, isLive: true }
         }));
@@ -351,7 +358,9 @@
     titleBar.parentElement.insertBefore(container, titleBar.nextSibling);
   }
 
-  function showToastNotification(msg) {
+  let toastHideTimer = null;
+
+  function showToastNotification(msg, onClick = null) {
     if (!toastElement) {
       toastElement = document.createElement('div');
       toastElement.className = 'ekstension-stream-toast';
@@ -361,9 +370,23 @@
     toastElement.textContent = msg;
     toastElement.classList.add('show');
 
-    setTimeout(() => {
+    if (typeof onClick === 'function') {
+      toastElement.classList.add('clickable');
+      toastElement.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onClick(e);
+        toastElement.classList.remove('show');
+      };
+    } else {
+      toastElement.classList.remove('clickable');
+      toastElement.onclick = null;
+    }
+
+    if (toastHideTimer) clearTimeout(toastHideTimer);
+    toastHideTimer = setTimeout(() => {
       toastElement.classList.remove('show');
-    }, 2800);
+    }, typeof onClick === 'function' ? 4500 : 2800);
   }
 
   function init() {
