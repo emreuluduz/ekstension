@@ -1,0 +1,820 @@
+/* ==========================================================================
+   ek$tension - In-Page Power Tools Styles
+   (Keyboard Navigation, Zen Mode, Bookmarks Drawer, Infinite Scroll & Live Stream)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. KEYBOARD NAVIGATION & FOCUS HIGHLIGHT
+   -------------------------------------------------------------------------- */
+.ekstension-focused-entry {
+  position: relative !important;
+  border-left: 4px solid #10b981 !important;
+  background: rgba(16, 185, 129, 0.05) !important;
+  box-shadow: 0 2px 12px rgba(16, 185, 129, 0.08) !important;
+  border-radius: 0 8px 8px 0 !important;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease !important;
+  scroll-margin-top: 90px !important;
+}
+
+body.theme-dark .ekstension-focused-entry,
+body[data-theme="dark"] .ekstension-focused-entry {
+  border-left-color: #34d399 !important;
+  background: rgba(52, 211, 153, 0.08) !important;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Keyboard Shortcuts Cheat Sheet Modal */
+.ekstension-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(4px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 10000000 !important;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease !important;
+}
+
+.ekstension-modal-overlay.active {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.ekstension-modal-card {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border-radius: 14px !important;
+  width: 90% !important;
+  max-width: 520px !important;
+  padding: 24px !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  transform: translateY(12px) scale(0.98);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.ekstension-modal-overlay.active .ekstension-modal-card {
+  transform: translateY(0) scale(1) !important;
+}
+
+body.theme-dark .ekstension-modal-card,
+body[data-theme="dark"] .ekstension-modal-card {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+
+.ekstension-modal-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 18px !important;
+  padding-bottom: 12px !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+body.theme-dark .ekstension-modal-header,
+body[data-theme="dark"] .ekstension-modal-header {
+  border-bottom-color: #334155 !important;
+}
+
+.ekstension-modal-header h3 {
+  margin: 0 !important;
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.ekstension-modal-close-btn {
+  background: none !important;
+  border: none !important;
+  cursor: pointer !important;
+  font-size: 18px !important;
+  color: #64748b !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+}
+
+.ekstension-modal-close-btn:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #0f172a !important;
+}
+
+.ekstension-shortcuts-list {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+}
+
+.ekstension-shortcut-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 8px 10px !important;
+  border-radius: 8px !important;
+  background: rgba(0, 0, 0, 0.02) !important;
+}
+
+body.theme-dark .ekstension-shortcut-row,
+body[data-theme="dark"] .ekstension-shortcut-row {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.ekstension-shortcut-desc {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: inherit !important;
+}
+
+.ekstension-shortcut-keys {
+  display: flex !important;
+  gap: 4px !important;
+}
+
+.ekstension-kbd {
+  display: inline-block !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  border-bottom: 2px solid #94a3b8 !important;
+  border-radius: 5px !important;
+  padding: 2px 7px !important;
+  font-size: 12px !important;
+  font-family: monospace !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.theme-dark .ekstension-kbd,
+body[data-theme="dark"] .ekstension-kbd {
+  background: #334155 !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
+  border-bottom-color: #1e293b !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. ZEN / READER MODE
+   -------------------------------------------------------------------------- */
+body.ekstension-zen-active {
+  background: #fdfdfd !important;
+}
+
+body.ekstension-zen-active.theme-dark,
+body.ekstension-zen-active[data-theme="dark"] {
+  background: #121212 !important;
+}
+
+/* Hide distracting sidebars, ads, headers in Zen Mode */
+body.ekstension-zen-active #sub-title-list,
+body.ekstension-zen-active #top-navigation,
+body.ekstension-zen-active #top-bar,
+body.ekstension-zen-active header,
+body.ekstension-zen-active footer,
+body.ekstension-zen-active .ad-slot,
+body.ekstension-zen-active .ad-container,
+body.ekstension-zen-active .sticky-ad,
+body.ekstension-zen-active aside,
+body.ekstension-zen-active #index-section,
+body.ekstension-zen-active .sub-title-menu,
+body.ekstension-zen-active .secondary-navigation,
+body.ekstension-zen-active #bottom-ads,
+body.ekstension-zen-active .sponsor,
+body.ekstension-zen-active iframe[id*="google_ads"],
+body.ekstension-zen-active .site-footer {
+  display: none !important;
+}
+
+/* Center main content & expand to window */
+body.ekstension-zen-active #container,
+body.ekstension-zen-active #content,
+body.ekstension-zen-active #main,
+body.ekstension-zen-active #content-body,
+body.ekstension-zen-active #topic {
+  width: 100% !important;
+  max-width: var(--ekstension-zen-width, 1120px) !important;
+  margin: 0 auto !important;
+  padding: 24px 20px !important;
+  float: none !important;
+  box-sizing: border-box !important;
+}
+
+body.ekstension-zen-active #index-section,
+body.ekstension-zen-active #sub-title-list {
+  display: none !important;
+  width: 0 !important;
+}
+
+body.ekstension-zen-active #main {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+body.ekstension-zen-active #topic h1#title {
+  text-align: center !important;
+  font-size: 26px !important;
+  margin-bottom: 28px !important;
+  padding-bottom: 14px !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+body.ekstension-zen-active .content {
+  font-size: var(--ekstension-zen-font-size, 17px) !important;
+  line-height: var(--ekstension-zen-line-height, 1.8) !important;
+  font-family: var(--ekstension-zen-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Georgia, serif) !important;
+  letter-spacing: 0.2px !important;
+}
+
+body.ekstension-zen-active #entry-item-list > li {
+  margin-bottom: 36px !important;
+  padding-bottom: 24px !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Floating Zen Toolbar - Strictly visible only when Zen Mode is active */
+.ekstension-zen-toolbar {
+  display: none !important;
+}
+
+body.ekstension-zen-active .ekstension-zen-toolbar {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  border-radius: 30px !important;
+  padding: 6px 12px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+  z-index: 9999999 !important;
+  opacity: 0.85 !important;
+  transition: opacity 0.2s ease, transform 0.2s ease !important;
+}
+
+body.ekstension-zen-active .ekstension-zen-toolbar:hover {
+  opacity: 1 !important;
+  transform: translateY(-2px) !important;
+}
+
+body.ekstension-zen-active.theme-dark .ekstension-zen-toolbar,
+body.ekstension-zen-active[data-theme="dark"] .ekstension-zen-toolbar {
+  background: rgba(30, 41, 59, 0.94) !important;
+  border-color: #475569 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Zen Mode Floating Keyboard Shortcuts Hint (Bottom Left) */
+.ekstension-zen-shortcuts-hint {
+  display: none !important;
+}
+
+body.ekstension-zen-active .ekstension-zen-shortcuts-hint {
+  position: fixed !important;
+  bottom: 24px !important;
+  left: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  border-radius: 30px !important;
+  padding: 6px 16px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
+  z-index: 9999999 !important;
+  font-size: 12px !important;
+  color: #64748b !important;
+  opacity: 0.75 !important;
+  transition: opacity 0.2s ease, transform 0.2s ease !important;
+  user-select: none !important;
+}
+
+body.ekstension-zen-active .ekstension-zen-shortcuts-hint:hover {
+  opacity: 1 !important;
+  transform: translateY(-2px) !important;
+}
+
+body.ekstension-zen-active.theme-dark .ekstension-zen-shortcuts-hint,
+body.ekstension-zen-active[data-theme="dark"] .ekstension-zen-shortcuts-hint {
+  background: rgba(30, 41, 59, 0.92) !important;
+  border-color: #475569 !important;
+  color: #cbd5e1 !important;
+}
+
+.ekstension-zen-shortcuts-hint span {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-weight: 500 !important;
+}
+
+.ekstension-zen-btn {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  color: inherit !important;
+  border-radius: 20px !important;
+  padding: 5px 10px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  transition: background 0.15s ease !important;
+}
+
+.ekstension-zen-btn:hover {
+  background: rgba(0, 0, 0, 0.06) !important;
+}
+
+body.theme-dark .ekstension-zen-btn:hover,
+body[data-theme="dark"] .ekstension-zen-btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.ekstension-zen-btn.exit-btn {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+.ekstension-zen-btn.exit-btn:hover {
+  background: #dc2626 !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. BOOKMARKS & READ LATER DRAWER
+   -------------------------------------------------------------------------- */
+.ekstension-bookmark-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  background: transparent !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 16px !important;
+  padding: 3px 8px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: #64748b !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  margin-left: 6px !important;
+  user-select: none !important;
+}
+
+.ekstension-bookmark-btn:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.theme-dark .ekstension-bookmark-btn,
+body[data-theme="dark"] .ekstension-bookmark-btn {
+  border-color: #334155 !important;
+  color: #94a3b8 !important;
+}
+
+body.theme-dark .ekstension-bookmark-btn:hover,
+body[data-theme="dark"] .ekstension-bookmark-btn:hover {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+.ekstension-bookmark-btn.saved {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+  border-color: #fcd34d !important;
+  font-weight: 600 !important;
+}
+
+body.theme-dark .ekstension-bookmark-btn.saved,
+body[data-theme="dark"] .ekstension-bookmark-btn.saved {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+  border-color: #d97706 !important;
+}
+
+/* Floating Bookmarks Drawer Button */
+.ekstension-drawer-toggle-btn {
+  position: fixed !important;
+  bottom: 80px !important;
+  right: 24px !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4) !important;
+  cursor: pointer !important;
+  z-index: 999999 !important;
+  transition: transform 0.2s ease, background-color 0.2s ease !important;
+}
+
+.ekstension-drawer-toggle-btn:hover {
+  transform: scale(1.08) !important;
+  background: #059669 !important;
+}
+
+.ekstension-drawer-badge {
+  position: absolute !important;
+  top: -4px !important;
+  right: -4px !important;
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 2px 6px !important;
+  border-radius: 10px !important;
+  border: 2px solid #ffffff !important;
+}
+
+/* Slide-over Drawer */
+.ekstension-drawer {
+  position: fixed !important;
+  top: 0 !important;
+  right: -440px !important;
+  width: 420px !important;
+  max-width: 90vw !important;
+  height: 100vh !important;
+  background: #ffffff !important;
+  color: #1e293b !important;
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.15) !important;
+  z-index: 10000001 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+.ekstension-drawer.open {
+  right: 0 !important;
+}
+
+body.theme-dark .ekstension-drawer,
+body[data-theme="dark"] .ekstension-drawer {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+.ekstension-drawer-header {
+  padding: 16px 20px !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+body.theme-dark .ekstension-drawer-header,
+body[data-theme="dark"] .ekstension-drawer-header {
+  border-bottom-color: #1e293b !important;
+}
+
+.ekstension-drawer-title {
+  margin: 0 !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.ekstension-drawer-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.ekstension-icon-btn {
+  background: transparent !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  color: inherit !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.ekstension-icon-btn:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+body.theme-dark .ekstension-icon-btn,
+body[data-theme="dark"] .ekstension-icon-btn {
+  border-color: #334155 !important;
+}
+
+.ekstension-drawer-search {
+  padding: 12px 20px !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+.ekstension-drawer-search input {
+  width: 100% !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  border: 1px solid #cbd5e1 !important;
+  font-size: 13px !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+}
+
+body.theme-dark .ekstension-drawer-search input,
+body[data-theme="dark"] .ekstension-drawer-search input {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+.ekstension-drawer-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 14px 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+.ekstension-bookmark-card {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  padding: 12px 14px !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.ekstension-bookmark-card:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.theme-dark .ekstension-bookmark-card,
+body[data-theme="dark"] .ekstension-bookmark-card {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+.ekstension-bookmark-card-title {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #10b981 !important;
+  margin-bottom: 6px !important;
+  display: block !important;
+  text-decoration: none !important;
+}
+
+.ekstension-bookmark-card-content {
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  color: #475569 !important;
+  max-height: 80px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  margin-bottom: 8px !important;
+}
+
+body.theme-dark .ekstension-bookmark-card-content,
+body[data-theme="dark"] .ekstension-bookmark-card-content {
+  color: #cbd5e1 !important;
+}
+
+.ekstension-bookmark-card-meta {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.04) !important;
+  padding-top: 6px !important;
+}
+
+.ekstension-drawer-empty {
+  text-align: center !important;
+  padding: 40px 20px !important;
+  color: #94a3b8 !important;
+  font-size: 13px !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. INFINITE SCROLL & LIVE STREAM
+   -------------------------------------------------------------------------- */
+.ekstension-stream-toggle-container {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-left: 8px !important;
+  vertical-align: middle !important;
+}
+
+.ekstension-stream-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 20px !important;
+  padding: 5px 12px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  user-select: none !important;
+}
+
+.ekstension-stream-btn:hover {
+  background: #e2e8f0 !important;
+}
+
+.ekstension-stream-btn.active {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35) !important;
+  animation: pulse-stream-btn 2s infinite !important;
+}
+
+@keyframes pulse-stream-btn {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+  70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.ekstension-infinite-loader {
+  display: none !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  padding: 24px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+  font-family: inherit !important;
+}
+
+.ekstension-infinite-loader.show {
+  display: flex !important;
+}
+
+.ekstension-spinner {
+  width: 20px !important;
+  height: 20px !important;
+  border: 3px solid rgba(16, 185, 129, 0.2) !important;
+  border-top-color: #10b981 !important;
+  border-radius: 50% !important;
+  animation: ekstension-spin 0.8s linear infinite !important;
+}
+
+@keyframes ekstension-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ekstension-new-live-entry {
+  animation: ekstension-glow 3s ease-out !important;
+}
+
+@keyframes ekstension-glow {
+  0% { background-color: rgba(16, 185, 129, 0.25); }
+  100% { background-color: transparent; }
+}
+
+.ekstension-stream-toast {
+  position: fixed !important;
+  bottom: 24px !important;
+  left: 50% !important;
+  transform: translateX(-50%) translateY(50px) !important;
+  background: #10b981 !important;
+  color: #ffffff !important;
+  padding: 8px 18px !important;
+  border-radius: 30px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+  z-index: 9999999 !important;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.ekstension-stream-toast.show {
+  transform: translateX(-50%) translateY(0) !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Page Divider & Entrance Animation */
+.ekstension-page-divider {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 32px 0 24px 0 !important;
+  position: relative !important;
+  user-select: none !important;
+}
+
+.ekstension-page-divider-line {
+  flex: 1 !important;
+  height: 1px !important;
+  background: linear-gradient(to right, transparent, rgba(16, 185, 129, 0.3), transparent) !important;
+}
+
+.ekstension-page-divider-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  border-radius: 24px !important;
+  padding: 6px 16px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.3px !important;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.12) !important;
+  animation: ekstension-page-badge-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.theme-dark .ekstension-page-divider-badge,
+body[data-theme="dark"] .ekstension-page-divider-badge {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: rgba(52, 211, 153, 0.4) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+@keyframes ekstension-page-badge-pop {
+  0% { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.ekstension-page-fade-in {
+  animation: ekstension-entry-fade-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+@keyframes ekstension-entry-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ekstension-end-of-topic-card {
+  text-align: center !important;
+  padding: 28px 20px !important;
+  margin: 30px 0 !important;
+  background: rgba(0, 0, 0, 0.02) !important;
+  border: 1px dashed rgba(0, 0, 0, 0.12) !important;
+  border-radius: 12px !important;
+  color: #64748b !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+body.theme-dark .ekstension-end-of-topic-card,
+body[data-theme="dark"] .ekstension-end-of-topic-card {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #94a3b8 !important;
+}
+
+.ekstension-scroll-top-btn {
+  margin-top: 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 20px !important;
+  padding: 6px 14px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease, background 0.15s ease !important;
+}
+
+.ekstension-scroll-top-btn:hover {
+  transform: translateY(-2px) !important;
+  background: #059669 !important;
+}

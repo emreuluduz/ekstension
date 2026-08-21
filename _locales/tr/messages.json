@@ -15,6 +15,10 @@
         "message": "DEBE",
         "description": "DEBE sekmesi"
     },
+    "tab_bookmarks": {
+        "message": "Okuma Listesi",
+        "description": "Okuma Listesi sekmesi"
+    },
     "extension_description": {
         "message": "Ekşi Sözlük için hızlı gündem, debe, arama, yazar ve konu filtreleme eklentisi (Gayriresmi)",
         "description": "Eklentinin açıklaması"

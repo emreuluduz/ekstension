@@ -39,6 +39,10 @@
             <span class="material-icons">emoji_events</span>
             <span data-i18n="tab_debe"></span>
         </button>
+        <button class="main-tab-btn" data-tab="bookmarks">
+            <span class="material-icons">bookmark</span>
+            <span data-i18n="tab_bookmarks"></span>
+        </button>
     </div>
     <div id="search-panel" class="search-panel hidden">
         <h2>Ara</h2>
@@ -167,6 +171,30 @@
                         <!-- Favoriler buraya dinamik olarak eklenecek -->
                     </div>
                 </div>
+            </div>
+        </div>
+        <div id="bookmarks-panel" class="bookmarks-panel hidden">
+            <div class="bookmarks-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h2 style="margin: 0; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                    <span class="material-icons" style="font-size: 18px; color: #10b981;">bookmark</span>
+                    <span>Okuma Listesi</span>
+                    <span id="popup-bookmarks-count" class="badge-count" style="font-size: 11px; background: rgba(16,185,129,0.15); color: #10b981; padding: 1px 6px; border-radius: 10px;">0</span>
+                </h2>
+                <div class="bookmarks-actions" style="display: flex; gap: 4px;">
+                    <button id="popup-export-md-btn" class="backup-btn" style="padding: 3px 6px; font-size: 11px; display: inline-flex; align-items: center; gap: 2px;" title="Markdown (.md) Olarak İndir">
+                        <span class="material-icons" style="font-size: 13px;">description</span> .md
+                    </button>
+                    <button id="popup-export-json-btn" class="backup-btn" style="padding: 3px 6px; font-size: 11px; display: inline-flex; align-items: center; gap: 2px;" title="JSON Olarak İndir">
+                        <span class="material-icons" style="font-size: 13px;">code</span> .json
+                    </button>
+                </div>
+            </div>
+            <div class="search-input-wrapper" style="margin-bottom: 10px;">
+                <span class="material-icons search-icon" style="font-size: 16px;">search</span>
+                <input type="text" id="popup-bookmarks-search" placeholder="Kayıtlı entry'lerde ara..." autocomplete="off" style="font-size: 12px; padding: 6px 30px 6px 30px;">
+            </div>
+            <div id="popup-bookmarks-list" class="popup-bookmarks-list">
+                <!-- Kayıtlı entry kartları -->
             </div>
         </div>
         <div id="gundem-list"></div>

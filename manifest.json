@@ -82,9 +82,16 @@
                 "*://eksisozluk111.com/*"
             ],
             "all_frames": true,
-            "css": ["src/content/content.css"],
+            "css": [
+                "src/content/content.css",
+                "src/content/power-tools/power-tools.css"
+            ],
             "js": [
-                "src/content/filter.js"
+                "src/content/filter.js",
+                "src/content/power-tools/zen-mode.js",
+                "src/content/power-tools/bookmarks.js",
+                "src/content/power-tools/keyboard-nav.js",
+                "src/content/power-tools/infinite-scroll.js"
             ],
             "run_at": "document_end"
         },

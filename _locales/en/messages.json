@@ -15,6 +15,10 @@
         "message": "DEBE",
         "description": "DEBE tab"
     },
+    "tab_bookmarks": {
+        "message": "Read Later",
+        "description": "Read Later tab"
+    },
     "extension_description": {
         "message": "Fast trending topics, DEBE, search, author and topic filtering for Ekşi Sözlük (Unofficial)",
         "description": "The description of the extension"

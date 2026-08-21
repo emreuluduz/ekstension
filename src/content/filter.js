@@ -1737,6 +1737,75 @@ Format:
   });
 }
 
+// Tekil bir entry öğesini Gemini AI ile özetle (Klavye kısayolu ve harici tetikleyiciler için)
+async function summarizeSingleEntryElement(entry) {
+  if (!entry) return;
+
+  const existingBtn = entry.querySelector('.ekst-single-summary-btn');
+  if (existingBtn) {
+    existingBtn.click();
+    return;
+  }
+
+  const content = entry.querySelector('.content');
+  if (!content) return;
+  const author = entry.getAttribute('data-author') || '';
+
+  let box = entry.querySelector('.ekst-single-summary-box');
+  if (box) {
+    box.remove();
+    return;
+  }
+
+  const apiKey = await getStoredGeminiApiKey();
+  if (!apiKey) {
+    renderAPIKeySetupCard();
+    return;
+  }
+
+  showToastNotification('⚡ Gemini AI', 'Entry özetleniyor...');
+
+  try {
+    const prompt = `Aşağıdaki Ekşi Sözlük entry'sini EN FAZLA 2 KISA MADDEDE, çok net ve vurucu biçimde özetle. Özet kesinlikle kısa olmalı (en fazla 2 kısa cümle). Asla giriş cümlesi kurma, doğrudan maddeleri ver.
+
+Yazar: @${author}
+Entry:
+"${content.textContent.trim()}"
+
+Format:
+• (Yazarın ana iddiası / savunduğu temel fikir - 1 kısa cümle)
+• (Varsa öne sürdüğü en somut argüman veya örnek - 1 kısa cümle)`;
+
+    const summaryText = await callGeminiFlashAPI(prompt);
+
+    if (summaryText) {
+      box = document.createElement('div');
+      box.className = 'ekst-single-summary-box';
+      box.innerHTML = `
+        <div class="ekst-single-summary-box-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <span>⚡ Entry Özeti (@${author})</span>
+          <button class="ekst-summary-close-btn" style="background:none; border:none; color:inherit; cursor:pointer; font-size:14px; padding:2px 6px;" title="Kapat">✕</button>
+        </div>
+        <div class="ekst-single-summary-box-body">
+          ${formatSummaryMarkdown(summaryText)}
+        </div>
+      `;
+      box.querySelector('.ekst-summary-close-btn')?.addEventListener('click', () => box.remove());
+      content.parentNode.insertBefore(box, content.nextSibling);
+    } else {
+      showToastNotification('⚠️ Uyarı', 'Entry özetlenemedi.');
+    }
+  } catch (err) {
+    console.error('[ek$tension] Single entry summary error:', err);
+    if (err.message === 'KEY_MISSING') {
+      renderAPIKeySetupCard();
+    }
+  }
+}
+
+window.ekstensionSummarizeTopic = handleAISummarizeClick;
+window.ekstensionSummarizeSingleEntry = summarizeSingleEntryElement;
+
 // Tüm Sayfa İçi Araçları Çalıştır
 function runAllEnhancements() {
   if (isProcessing) return;
@@ -1859,3 +1928,11 @@ const observer = new MutationObserver((mutations) => {
 // Sayfayı gözlemle (Ana içerik alanı hazır olduğunda)
 const targetNode = document.getElementById('content-body') || document.body;
 observer.observe(targetNode, { childList: true, subtree: true });
+
+// Power Tools (Sonsuz Kaydırma & Canlı Akış) tarafından yeni entry eklendiğinde araçları çalıştır
+window.addEventListener('ekstension:entries-added', () => {
+  if (observerTimeout) clearTimeout(observerTimeout);
+  observerTimeout = setTimeout(() => {
+    runAllEnhancements();
+  }, 100);
+});

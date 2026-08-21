@@ -189,9 +189,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       const searchPanel = document.getElementById('search-panel');
       const gundemList = document.getElementById('gundem-list');
       const eksiResults = document.getElementById('eksi-results');
+      const bookmarksPanel = document.getElementById('bookmarks-panel');
 
       if (searchPanel) {
         searchPanel.classList.add('hidden');
+      }
+      if (bookmarksPanel) {
+        bookmarksPanel.classList.add('hidden');
       }
 
       const isOpening = UI.elements.settingsPanel.classList.contains('hidden');
@@ -217,7 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Ana Sekme Değiştirme (Gündem / DEBE)
+  // Ana Sekme Değiştirme (Gündem / DEBE / Okuma Listesi)
   document.querySelectorAll('.main-tab-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (btn.classList.contains('active')) return;
@@ -229,16 +233,154 @@ document.addEventListener('DOMContentLoaded', async () => {
       const settingsPanel = document.getElementById('settings-panel');
       const searchPanel = document.getElementById('search-panel');
       const gundemList = document.getElementById('gundem-list');
+      const bookmarksPanel = document.getElementById('bookmarks-panel');
       const content = document.querySelector('.content');
 
       if (settingsPanel) settingsPanel.classList.add('hidden');
       if (searchPanel) searchPanel.classList.add('hidden');
-      if (gundemList) gundemList.style.display = 'block';
-      if (content) content.scrollTop = 0;
 
-      await Topics.load(tab);
+      if (tab === 'bookmarks') {
+        if (gundemList) gundemList.style.display = 'none';
+        if (bookmarksPanel) bookmarksPanel.classList.remove('hidden');
+        if (content) content.scrollTop = 0;
+        await renderPopupBookmarks();
+      } else {
+        if (bookmarksPanel) bookmarksPanel.classList.add('hidden');
+        if (gundemList) gundemList.style.display = 'block';
+        if (content) content.scrollTop = 0;
+        await Topics.load(tab);
+      }
     });
   });
+
+  // --- Popup Bookmarks Logic ---
+  async function getSavedEntries() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get('ekstension_saved_entries', (res) => {
+        resolve(res?.ekstension_saved_entries || []);
+      });
+    });
+  }
+
+  async function removeSavedEntry(entryId) {
+    const entries = await getSavedEntries();
+    const filtered = entries.filter(e => e.id !== entryId);
+    await chrome.storage.local.set({ ekstension_saved_entries: filtered });
+    const searchVal = document.getElementById('popup-bookmarks-search')?.value || '';
+    await renderPopupBookmarks(searchVal);
+  }
+
+  async function renderPopupBookmarks(query = '') {
+    const listEl = document.getElementById('popup-bookmarks-list');
+    const countEl = document.getElementById('popup-bookmarks-count');
+    if (!listEl) return;
+
+    const allEntries = await getSavedEntries();
+    if (countEl) countEl.textContent = allEntries.length;
+
+    const q = query.toLowerCase().trim();
+    const filtered = q ? allEntries.filter(item =>
+      item.title?.toLowerCase().includes(q) ||
+      item.author?.toLowerCase().includes(q) ||
+      item.contentText?.toLowerCase().includes(q)
+    ) : allEntries;
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = `
+        <div style="text-align: center; padding: 30px 10px; color: var(--text-muted, #94a3b8); font-size: 12px;">
+          <span class="material-icons" style="font-size: 32px; display: block; margin-bottom: 6px; opacity: 0.5;">bookmark_border</span>
+          <span>${query ? 'Aramaya uygun kayıt bulunamadı.' : 'Henüz kaydedilmiş bir entry yok.'}</span>
+        </div>
+      `;
+      return;
+    }
+
+    listEl.innerHTML = filtered.map(item => `
+      <div class="popup-bookmark-card" data-id="${item.id}">
+        <a href="${item.url}" target="_blank" class="popup-bookmark-card-title">${escapePopupHtml(item.title)}</a>
+        <div class="popup-bookmark-card-content">${item.contentText ? escapePopupHtml(item.contentText.slice(0, 160)) + (item.contentText.length > 160 ? '...' : '') : ''}</div>
+        <div class="popup-bookmark-card-meta">
+          <span><strong>@${escapePopupHtml(item.author)}</strong> • ${escapePopupHtml(item.date || '')}</span>
+          <button class="popup-bookmark-delete-btn" data-id="${item.id}" title="Listeden Sil">
+            <span class="material-icons" style="font-size: 14px;">delete</span>
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    listEl.querySelectorAll('.popup-bookmark-delete-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        await removeSavedEntry(id);
+      });
+    });
+
+    listEl.querySelectorAll('.popup-bookmark-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.popup-bookmark-delete-btn')) return;
+        const link = card.querySelector('.popup-bookmark-card-title');
+        if (link && link.href) {
+          chrome.tabs.create({ url: link.href });
+        }
+      });
+    });
+  }
+
+  function escapePopupHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  const popupBookmarksSearch = document.getElementById('popup-bookmarks-search');
+  if (popupBookmarksSearch) {
+    popupBookmarksSearch.addEventListener('input', (e) => {
+      renderPopupBookmarks(e.target.value);
+    });
+  }
+
+  const exportMdBtn = document.getElementById('popup-export-md-btn');
+  if (exportMdBtn) {
+    exportMdBtn.addEventListener('click', async () => {
+      const entries = await getSavedEntries();
+      if (!entries.length) return;
+      let md = `# ek$tension Okuma Listesi\n\n*Dışa aktarılma tarihi: ${new Date().toLocaleString('tr-TR')}*\n*Toplam:* ${entries.length}\n\n---\n\n`;
+      entries.forEach((item, idx) => {
+        md += `### ${idx + 1}. [${item.title}](${item.url})\n`;
+        md += `> **Yazar:** [@${item.author}](https://eksisozluk.com${item.authorUrl}) | **Tarih:** ${item.date || '-'}\n\n`;
+        md += `${item.contentText}\n\n---\n\n`;
+      });
+      downloadPopupBlob(md, `ekstension-okuma-listesi-${getTodayDateStr()}.md`, 'text/markdown');
+    });
+  }
+
+  const exportJsonBtn = document.getElementById('popup-export-json-btn');
+  if (exportJsonBtn) {
+    exportJsonBtn.addEventListener('click', async () => {
+      const entries = await getSavedEntries();
+      if (!entries.length) return;
+      downloadPopupBlob(JSON.stringify(entries, null, 2), `ekstension-okuma-listesi-${getTodayDateStr()}.json`, 'application/json');
+    });
+  }
+
+  function downloadPopupBlob(content, filename, type) {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function getTodayDateStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
 
   // Ayarlar Tab değiştirme (Genel / Favoriler)
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -297,9 +439,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       const settingsPanel = document.getElementById('settings-panel');
       const gundemList = document.getElementById('gundem-list');
       const eksiResults = document.getElementById('eksi-results');
+      const bookmarksPanel = document.getElementById('bookmarks-panel');
 
       if (settingsPanel) {
         settingsPanel.classList.add('hidden');
+      }
+      if (bookmarksPanel) {
+        bookmarksPanel.classList.add('hidden');
       }
 
       const isOpening = searchPanel.classList.contains('hidden');
@@ -308,6 +454,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (isOpening) {
         if (gundemList) gundemList.style.display = 'none';
         if (eksiResults) eksiResults.style.display = 'none';
+        if (bookmarksPanel) bookmarksPanel.classList.add('hidden');
         searchInput.focus();
       } else {
         const searchResultsContainer = document.getElementById('search-results-container');
