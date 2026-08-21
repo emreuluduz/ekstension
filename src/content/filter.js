@@ -131,51 +131,6 @@ function extractEksiImageId(url) {
   return null;
 }
 
-// Görseli gizli Same-Origin iframe yardımıyla DOM'dan çözme (Cloudflare bypass & 100% güvenilirlik)
-function resolveEksiImageViaIframe(id) {
-  return new Promise((resolve) => {
-    const iframe = document.createElement('iframe');
-    iframe.src = `${window.location.origin}/img/${id}`;
-    iframe.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:10px;height:10px;opacity:0;pointer-events:none;z-index:-1;';
-
-    let isResolved = false;
-
-    const cleanup = () => {
-      if (iframe.parentNode) {
-        iframe.parentNode.removeChild(iframe);
-      }
-    };
-
-    const timer = setTimeout(() => {
-      if (!isResolved) {
-        isResolved = true;
-        cleanup();
-        resolve(null);
-      }
-    }, 6000);
-
-    iframe.onload = () => {
-      if (isResolved) return;
-      try {
-        const doc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (doc) {
-          const img = doc.querySelector('#image') || doc.querySelector('a#image-zoom');
-          const imgSrc = img?.getAttribute('src') || img?.getAttribute('href') || doc.querySelector('meta[property="og:image"]')?.getAttribute('content');
-          if (imgSrc) {
-            isResolved = true;
-            clearTimeout(timer);
-            cleanup();
-            resolve(imgSrc);
-            return;
-          }
-        }
-      } catch (e) { }
-    };
-
-    (document.body || document.documentElement).appendChild(iframe);
-  });
-}
-
 // HTML tabanlı görsel sayfalarından doğrudan görsel CDN URL'sini çöz
 async function resolveMediaUrl(url) {
   if (!url) return null;
@@ -195,7 +150,6 @@ async function resolveMediaUrl(url) {
   if (eksiId) {
     const sameOriginImgUrl = `${window.location.origin}/img/${eksiId}`;
 
-    // 1a. Doğrudan Same-Origin Fetch (Kullanıcının aktif session & cookies'iyle)
     try {
       const res = await fetch(sameOriginImgUrl, {
         credentials: 'include',
@@ -205,24 +159,30 @@ async function resolveMediaUrl(url) {
       });
       if (res.ok) {
         const html = await res.text();
-        const match = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
-          html.match(/<img\s+id=["']image["']\s+src=["']([^"']+)["']/i) ||
-          html.match(/<a\s+id=["']image-zoom["']\s+href=["']([^"']+)["']/i);
-        if (match && match[1]) {
-          imageResolvedCache.set(url, match[1]);
-          return match[1];
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+
+        const imgEl = doc.querySelector('#image') ||
+          doc.querySelector('a#image-zoom') ||
+          doc.querySelector('.image-wrapper img') ||
+          doc.querySelector('img[src*="ekstat.com"]') ||
+          doc.querySelector('img[src*="soz.lk"]') ||
+          doc.querySelector('meta[property="og:image"]');
+
+        let imgSrc = imgEl?.getAttribute('src') || imgEl?.getAttribute('href') || imgEl?.getAttribute('content');
+        if (imgSrc) {
+          if (imgSrc.startsWith('//')) {
+            imgSrc = window.location.protocol + imgSrc;
+          } else if (imgSrc.startsWith('/')) {
+            imgSrc = window.location.origin + imgSrc;
+          }
+          imageResolvedCache.set(url, imgSrc);
+          return imgSrc;
         }
       }
-    } catch (e) { }
-
-    // 1b. Same-Origin Iframe fallback (Cloudflare Challenge/Bot Koruması durumunda)
-    try {
-      const iframeSrc = await resolveEksiImageViaIframe(eksiId);
-      if (iframeSrc) {
-        imageResolvedCache.set(url, iframeSrc);
-        return iframeSrc;
-      }
-    } catch (e) { }
+    } catch (e) {
+      console.warn('[ek$tension] resolveMediaUrl eksi image fetch error:', e);
+    }
   }
 
   // 2. Harici HTML tabanlı görsel siteleri için Background Worker Fetch
@@ -407,9 +367,19 @@ function applyMediaPreviews() {
     const content = entry.querySelector('.content');
     if (!content) return;
 
-    const links = content.querySelectorAll('a[href]:not([data-ekstension-processed])');
+    // Sadece content içindeki orijinal linkleri seç
+    const links = content.querySelectorAll('a[href]');
 
     links.forEach(link => {
+      // Eğer link zaten işlendiyse veya eklentinin kendi container'ı içindeyse kesinlikle atla
+      if (link.hasAttribute('data-ekstension-processed')) return;
+      if (link.closest('.ekstension-media-container') ||
+          link.closest('.ekstension-preview-btn') ||
+          link.closest('.ekstension-single-summary-box') ||
+          link.closest('#ekstension-entry-popover')) {
+        return;
+      }
+
       link.setAttribute('data-ekstension-processed', 'true');
       const href = link.href || link.getAttribute('href') || '';
 
@@ -420,6 +390,7 @@ function applyMediaPreviews() {
 
       const previewBtn = document.createElement('button');
       previewBtn.className = 'ekstension-preview-btn';
+      previewBtn.setAttribute('data-ekstension-processed', 'true');
       previewBtn.textContent = isImg ? '🖼️ Önizle' : '▶️ Oynat';
       previewBtn.title = isImg ? 'Görseli doğrudan aç/kapat' : 'Videoyu oynat/kapat';
 
@@ -456,23 +427,30 @@ function applyMediaPreviews() {
 
         container = document.createElement('div');
         container.className = 'ekstension-media-container';
+        container.setAttribute('data-ekstension-processed', 'true');
 
-        // previewBtn'den hemen sonra ekle (böylece buton ve link görselin üstünde kalır)
-        previewBtn.parentNode.insertBefore(container, previewBtn.nextSibling);
+        // KRİTİK: Container'ı entry metninin akışını bölmemesi ve entry'nin devamının
+        // kesintisiz okunabilmesi için .content'in hemen sonrasına (footer'ın önüne) ekle!
+        const footer = entry.querySelector('footer');
+        if (footer) {
+          entry.insertBefore(container, footer);
+        } else {
+          entry.appendChild(container);
+        }
         openMedia();
 
         if (isImg) {
           container.innerHTML = `
-            <div class="ekstension-media-header">
-              <span class="ekstension-media-title">🖼️ Görsel Önizleme</span>
-              <div class="ekstension-media-actions">
-                <button class="ekstension-media-zoom-btn" type="button" title="Görseli tam boyut aç / sığdır">🔍 Büyüt</button>
-                <a class="ekstension-media-link-btn" href="${href}" target="_blank" rel="noopener noreferrer" title="Orijinal bağlantıyı yeni sekmede aç">↗ Aç</a>
-                <button class="ekstension-media-close-btn" type="button" title="Önizlemeyi Kapat">✕</button>
+            <div class="ekstension-media-header" data-ekstension-processed="true">
+              <span class="ekstension-media-title" data-ekstension-processed="true">🖼️ Görsel Önizleme</span>
+              <div class="ekstension-media-actions" data-ekstension-processed="true">
+                <button class="ekstension-media-zoom-btn" type="button" data-ekstension-processed="true" title="Görseli tam boyut aç / sığdır">🔍 Büyüt</button>
+                <a class="ekstension-media-link-btn" href="${href}" target="_blank" rel="noopener noreferrer" data-ekstension-processed="true" title="Orijinal bağlantıyı yeni sekmede aç">↗ Aç</a>
+                <button class="ekstension-media-close-btn" type="button" data-ekstension-processed="true" title="Önizlemeyi Kapat">✕</button>
               </div>
             </div>
-            <div class="ekstension-media-body">
-              <div class="ekstension-media-loading">⏳ Görsel yükleniyor...</div>
+            <div class="ekstension-media-body" data-ekstension-processed="true">
+              <div class="ekstension-media-loading" data-ekstension-processed="true">⏳ Görsel yükleniyor...</div>
             </div>
           `;
 
@@ -503,6 +481,7 @@ function applyMediaPreviews() {
             img.loading = 'lazy';
             img.referrerPolicy = 'no-referrer';
             img.title = 'Büyütmek / sığdırmak için tıklayın';
+            img.setAttribute('data-ekstension-processed', 'true');
 
             const toggleZoom = () => {
               const isExpanded = img.classList.toggle('expanded');
@@ -540,15 +519,15 @@ function applyMediaPreviews() {
           }
         } else if (ytId) {
           container.innerHTML = `
-            <div class="ekstension-media-header">
-              <span class="ekstension-media-title">▶️ YouTube Videosu</span>
-              <div class="ekstension-media-actions">
-                <a class="ekstension-media-link-btn" href="${href}" target="_blank" rel="noopener noreferrer" title="YouTube'da aç">↗ YouTube</a>
-                <button class="ekstension-media-close-btn" type="button" title="Kapat">✕</button>
+            <div class="ekstension-media-header" data-ekstension-processed="true">
+              <span class="ekstension-media-title" data-ekstension-processed="true">▶️ YouTube Videosu</span>
+              <div class="ekstension-media-actions" data-ekstension-processed="true">
+                <a class="ekstension-media-link-btn" href="${href}" target="_blank" rel="noopener noreferrer" data-ekstension-processed="true" title="YouTube'da aç">↗ YouTube</a>
+                <button class="ekstension-media-close-btn" type="button" data-ekstension-processed="true" title="Kapat">✕</button>
               </div>
             </div>
-            <div class="ekstension-media-body" style="padding: 0 !important;">
-              <div class="ekstension-video-wrapper">
+            <div class="ekstension-media-body" data-ekstension-processed="true" style="padding: 0 !important;">
+              <div class="ekstension-video-wrapper" data-ekstension-processed="true">
                 <iframe src="https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
               </div>
             </div>
@@ -574,9 +553,9 @@ function showImageError(container, originalUrl) {
   if (!container) return;
   const bodyEl = container.querySelector('.ekstension-media-body') || container;
   bodyEl.innerHTML = `
-    <div class="ekstension-media-error">
+    <div class="ekstension-media-error" data-ekstension-processed="true">
       <span>⚠️ Görsel doğrudan yüklenemedi (silinmiş veya harici korumalı olabilir).</span>
-      <a href="${originalUrl}" target="_blank" rel="noopener noreferrer">Yeni sekmede aç ↗</a>
+      <a href="${originalUrl}" target="_blank" rel="noopener noreferrer" data-ekstension-processed="true">Yeni sekmede aç ↗</a>
     </div>
   `;
 }
@@ -2258,7 +2237,7 @@ function notifyPageReady() {
 
 // Başlangıç Yüklemesi
 function initialize() {
-  if (window !== window.top && !document.querySelector('#entry-item-list, ul.topic-list')) {
+  if (window !== window.top) {
     return;
   }
 
@@ -2314,6 +2293,9 @@ const observer = new MutationObserver((mutations) => {
     if (target && (
       target.id === 'ekstension-entry-popover' ||
       target.closest?.('#ekstension-entry-popover') ||
+      target.closest?.('.ekstension-media-container') ||
+      target.closest?.('.ekstension-single-summary-box') ||
+      target.closest?.('.ekstension-ai-summary-card') ||
       (target.classList && (
         target.classList.contains('ekstension-media-container') ||
         target.classList.contains('ekstension-preview-btn') ||
@@ -2329,6 +2311,8 @@ const observer = new MutationObserver((mutations) => {
         if (node.nodeType === 1 &&
           !node.classList?.contains('ekstension-preview-btn') &&
           !node.classList?.contains('ekstension-media-container') &&
+          !node.closest?.('.ekstension-media-container') &&
+          !node.closest?.('#ekstension-entry-popover') &&
           node.id !== 'ekstension-entry-popover') {
           relevantMutation = true;
           break;

@@ -83,7 +83,6 @@
                 "*://*.eksisozluk111.com/*",
                 "*://eksisozluk111.com/*"
             ],
-            "all_frames": true,
             "css": [
                 "src/content/content.css",
                 "src/content/power-tools/power-tools.css"

@@ -234,6 +234,7 @@
   window.addEventListener('ekstension:toggle-cheat-sheet', toggleCheatSheetModal);
 
   function init() {
+    if (window !== window.top) return;
     window.addEventListener('keydown', handleKeyDown);
   }
 

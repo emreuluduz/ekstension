@@ -209,6 +209,7 @@
   });
 
   function init() {
+    if (window !== window.top) return;
     loadSettings();
     injectZenHeaderButton();
   }

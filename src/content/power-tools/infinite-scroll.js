@@ -390,6 +390,7 @@
   }
 
   function init() {
+    if (window !== window.top) return;
     if (!document.querySelector('#entry-item-list')) return;
 
     injectStreamToggleButton();

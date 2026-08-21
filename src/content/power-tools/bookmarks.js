@@ -370,6 +370,7 @@
   });
 
   function init() {
+    if (window !== window.top) return;
     createFloatingToggleButton();
     loadSavedEntries();
     injectBookmarkButtons();
