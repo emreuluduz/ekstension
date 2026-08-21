@@ -200,7 +200,7 @@
 }
 
 .ekstension-media-container {
-  display: block !important;
+  display: block;
   clear: both !important;
   margin: 14px 0 !important;
   padding: 0 !important;
@@ -211,6 +211,10 @@
   box-sizing: border-box !important;
   overflow: hidden !important;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+}
+
+.ekstension-media-container.ekstension-media-hidden {
+  display: none !important;
 }
 
 .ekstension-media-header {
@@ -272,24 +276,27 @@
   align-items: center !important;
   background: rgba(0, 0, 0, 0.01);
   overflow: auto !important;
+  max-height: 80vh;
 }
 
 .ekstension-image-preview {
   max-width: 100% !important;
   width: auto !important;
   height: auto !important;
-  max-height: 600px;
+  max-height: 500px;
   object-fit: contain;
   border-radius: 4px;
   display: block !important;
   margin: 0 auto !important;
   cursor: zoom-in;
-  transition: max-height 0.25s ease;
+  transition: all 0.2s ease;
 }
 
 .ekstension-image-preview.expanded {
+  max-width: none !important;
   max-height: none !important;
   cursor: zoom-out;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .ekstension-video-wrapper {

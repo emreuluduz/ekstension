@@ -398,6 +398,7 @@ function applyMediaPreviews() {
 
       const closeMedia = () => {
         if (container) {
+          container.classList.add('ekstension-media-hidden');
           container.style.display = 'none';
         }
         previewBtn.classList.remove('active');
@@ -406,6 +407,7 @@ function applyMediaPreviews() {
 
       const openMedia = () => {
         if (container) {
+          container.classList.remove('ekstension-media-hidden');
           container.style.display = 'block';
         }
         previewBtn.classList.add('active');
@@ -417,7 +419,7 @@ function applyMediaPreviews() {
         e.stopPropagation();
 
         if (container) {
-          if (container.style.display === 'none') {
+          if (container.classList.contains('ekstension-media-hidden') || container.style.display === 'none') {
             openMedia();
           } else {
             closeMedia();
@@ -456,15 +458,32 @@ function applyMediaPreviews() {
 
           const closeBtn = container.querySelector('.ekstension-media-close-btn');
           if (closeBtn) {
-            closeBtn.addEventListener('click', (ev) => {
+            closeBtn.onclick = (ev) => {
               ev.preventDefault();
               ev.stopPropagation();
               closeMedia();
-            });
+            };
           }
 
           const zoomBtn = container.querySelector('.ekstension-media-zoom-btn');
           const bodyEl = container.querySelector('.ekstension-media-body');
+
+          let loadedImg = null;
+          const toggleZoom = () => {
+            if (!loadedImg) return;
+            const isExpanded = loadedImg.classList.toggle('expanded');
+            if (zoomBtn) {
+              zoomBtn.textContent = isExpanded ? '🔍 Küçült' : '🔍 Büyüt';
+            }
+          };
+
+          if (zoomBtn) {
+            zoomBtn.onclick = (ev) => {
+              ev.preventDefault();
+              ev.stopPropagation();
+              toggleZoom();
+            };
+          }
 
           try {
             const directSrc = await resolveMediaUrl(href);
@@ -474,46 +493,31 @@ function applyMediaPreviews() {
             }
 
             bodyEl.innerHTML = '';
-            const img = document.createElement('img');
-            img.className = 'ekstension-image-preview';
-            img.src = directSrc;
-            img.alt = 'Görsel Önizleme';
-            img.loading = 'lazy';
-            img.referrerPolicy = 'no-referrer';
-            img.title = 'Büyütmek / sığdırmak için tıklayın';
-            img.setAttribute('data-ekstension-processed', 'true');
+            loadedImg = document.createElement('img');
+            loadedImg.className = 'ekstension-image-preview';
+            loadedImg.src = directSrc;
+            loadedImg.alt = 'Görsel Önizleme';
+            loadedImg.loading = 'lazy';
+            loadedImg.referrerPolicy = 'no-referrer';
+            loadedImg.title = 'Büyütmek / sığdırmak için tıklayın';
+            loadedImg.setAttribute('data-ekstension-processed', 'true');
 
-            const toggleZoom = () => {
-              const isExpanded = img.classList.toggle('expanded');
-              if (zoomBtn) {
-                zoomBtn.textContent = isExpanded ? '🔍 Küçült' : '🔍 Büyüt';
-              }
-            };
-
-            img.addEventListener('click', (ev) => {
+            loadedImg.onclick = (ev) => {
               ev.preventDefault();
               ev.stopPropagation();
               toggleZoom();
-            });
+            };
 
-            if (zoomBtn) {
-              zoomBtn.addEventListener('click', (ev) => {
-                ev.preventDefault();
-                ev.stopPropagation();
-                toggleZoom();
-              });
-            }
-
-            img.onerror = () => {
-              if (img.src !== href && directSrc !== href) {
-                img.onerror = () => showImageError(container, href);
-                img.src = href;
+            loadedImg.onerror = () => {
+              if (loadedImg.src !== href && directSrc !== href) {
+                loadedImg.onerror = () => showImageError(container, href);
+                loadedImg.src = href;
               } else {
                 showImageError(container, href);
               }
             };
 
-            bodyEl.appendChild(img);
+            bodyEl.appendChild(loadedImg);
           } catch (err) {
             showImageError(container, href);
           }
@@ -535,11 +539,11 @@ function applyMediaPreviews() {
 
           const closeBtn = container.querySelector('.ekstension-media-close-btn');
           if (closeBtn) {
-            closeBtn.addEventListener('click', (ev) => {
+            closeBtn.onclick = (ev) => {
               ev.preventDefault();
               ev.stopPropagation();
               closeMedia();
-            });
+            };
           }
         }
       });
