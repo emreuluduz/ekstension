@@ -982,7 +982,7 @@ function initEntryHoverPreview() {
 }
 
 // ==========================================================================
-// 6. AI Başlık & Entry Özetleyici (Gemini Nano & Cloud Ready)
+// 6. AI Başlık & Entry Özetleyici (Google Gemini AI)
 // ==========================================================================
 
 function getCurrentTopicSlug(mode = '') {
@@ -1080,7 +1080,7 @@ function injectAISummarizeButton() {
 
     const isFiltered = isTopicFilteredView();
     aiBtn.innerHTML = isFiltered ? `⚡ Başlığı Özetle (AI) <span style="font-size:10px;margin-left:2px;">▾</span>` : `⚡ Başlığı Özetle (AI)`;
-    aiBtn.title = isFiltered ? 'Özetleme kapsamı seç (Gündemdekiler veya Tüm Başlık)' : 'Tüm sayfaları tarayarak Gemini Nano ile başlığı özetle';
+    aiBtn.title = isFiltered ? 'Özetleme kapsamı seç (Gündemdekiler veya Tüm Başlık)' : 'Tüm sayfaları tarayarak Google Gemini ile başlığı özetle';
 
     aiBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -1253,7 +1253,7 @@ function renderAPIKeySetupCard(onSavedCallback) {
       </div>
     </div>
     <div class="ekst-summary-body" style="font-size: 13px; color: #334155;">
-      <p style="margin-top:0;">Ekşi Sözlük başlıklarını ve entry'leri <strong>Gemini 2.0 Flash Lite</strong> ile 1 saniyede ücretsiz özetlemek için Google AI Studio API anahtarınızı girin.</p>
+      <p style="margin-top:0;">Ekşi Sözlük başlıklarını ve entry'leri <strong>Google Gemini AI</strong> ile saniyeler içinde ücretsiz özetlemek için Google AI Studio API anahtarınızı girin.</p>
       
       <div style="background: rgba(124, 58, 237, 0.05); padding: 12px 14px; border-radius: 8px; margin: 12px 0; border: 1px dashed rgba(124, 58, 237, 0.3);">
         <div style="font-weight: 600; margin-bottom: 4px; color: #5b21b6;">💡 10 Saniyede Ücretsiz Key Nasıl Alınır?</div>
@@ -1435,7 +1435,7 @@ async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
       mode: effectiveMode,
       modeLabel,
       progress: 75,
-      statusText: `${modeLabel}: Toplam ${allEntries.length} entry Gemini 1.5 Flash ile özetleniyor...`
+      statusText: `${modeLabel}: Toplam ${allEntries.length} entry Google Gemini AI ile özetleniyor...`
     });
 
     // 5. Clean & Format entries
@@ -1671,7 +1671,7 @@ function injectSingleEntrySummarizeButtons() {
     const btn = document.createElement('button');
     btn.className = 'ekst-single-summary-btn';
     btn.innerHTML = '⚡ Özetle';
-    btn.title = 'Bu uzun entry\'yi Gemini 1.5 Flash ile 1 saniyede özetle';
+    btn.title = 'Bu uzun entry\'yi Google Gemini AI ile saniyeler içinde özetle';
 
     btn.addEventListener('click', async (e) => {
       e.preventDefault();
@@ -1736,33 +1736,6 @@ Format:
     footer.appendChild(btn);
   });
 }
-
-// AI Summarizer Mesajlarını Dinle
-chrome.runtime.onMessage.addListener((message) => {
-  if (message.action === 'summaryProgress' && message.task) {
-    showFloatingProgressPill(message.task);
-  }
-
-  if (message.action === 'summaryCompleted' && message.result) {
-    removeFloatingProgressPill();
-    renderSummaryCard(message.result);
-    showToastNotification(
-      '✨ Başlık Özeti Hazır!',
-      `"${message.result.topicTitle}" başlığı başarıyla özetlendi.`,
-      () => {
-        renderSummaryCard(message.result);
-      }
-    );
-  }
-
-  if (message.action === 'summaryError') {
-    removeFloatingProgressPill();
-    showToastNotification('⚠️ Özetleme Hatası', message.error || 'Özetleme tamamlanamadı.');
-    if (message.error?.includes('Gemini Nano') || message.error?.includes('LanguageModel') || message.error?.includes('Prompt API')) {
-      renderAIHelpCard(message.error);
-    }
-  }
-});
 
 // Tüm Sayfa İçi Araçları Çalıştır
 function runAllEnhancements() {

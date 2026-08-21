@@ -4,11 +4,11 @@ Chrome extension for Ekşi Sözlük that provides fast trending topics, in-page 
 
 ## Features
 
-### 🤖 Gemini Nano Yerleşik Yapay Zeka (On-Device AI Summarizer)
-- **Başlık & Tartışma Özetleyici (`⚡ Başlığı Özetle`)**: Çok sayfalı başlıklar dahil tüm sayfaları Cloudflare ve hız limitlerine takılmadan arkaplanda güvenle tarar. Chrome'un yerleşik **Gemini Nano** modeli ile tartışmanın ana fikrini, lehte/aleyhte görüşleri ve öne çıkan ortak kanıları tarafsız ve madde madde özetler.
-- **Tekil Entry Özetleyici (`⚡ Özetle`)**: 500 karakterden uzun olan kapsamlı entry'lerin altında çıkan buton ile anında 2-3 maddelik hızlı özet üretir.
-- **Arka Plan Sürekliliği & Çoklu Bildirim**: Kullanıcı sekmeyi veya sayfayı değiştirse bile arka planda tarama ve özetleme devam eder; sağ alttaki yüzen ilerleme kapsülü (Progress Pill), sayfa içi Toast bildirim ve masaüstü Chrome bildirimi ile bilgilendirir.
-- **Geleceğe Hazır & Modüler**: Sıfır maliyetli yerel Gemini Nano üzerinde çalışır; ileride Google AI Studio / Gemini API Key entegrasyonuna hazır mimari ile geliştirilmiştir.
+### ⚡ Google Gemini AI Özetleyici (Gemini 3.5 Flash Lite)
+- **Başlık & Tartışma Özetleyici (`⚡ Başlığı Özetle`)**: Çok sayfalı başlıklar ve gündem başlıkları dahil tüm entry'leri tarar. Google'ın resmi **Gemini 3.5 Flash Lite** modeli ile tartışmanın ana fikrini, farklı görüşleri ve öne çıkan ortak kanıları saniyeler içinde son derece net ve madde madde özetler.
+- **Tekil Entry Özetleyici (`⚡ Özetle`)**: 500 karakterden uzun olan kapsamlı entry'lerin altında çıkan buton ile anında 1-2 maddelik hap özet üretir.
+- **Işık Hızında & Bilgisayarı Yormaz**: İşlem Google'ın bulut altyapısında çalıştığından bilgisayarınızın işlemcisi veya belleği hiç yorulmaz, 1.5 - 2 saniyede sonuç verir.
+- **%100 Ücretsiz Kurulum**: Google AI Studio üzerinden alınan ücretsiz API anahtarı ile kolayca çalışır ([Kurulum Rehberi](docs/GEMINI_API_KEY_SETUP.md)).
 
 ### In-Page Power Tools (Ekşi Sözlük Web Sitesi Araçları)
 - **Entry Bkz Hover Preview (Entry Önizleme)**: Entry içindeki `(bkz: #173073218)` veya doğrudan entry referans linklerinin üzerine gelindiğinde sayfadan ayrılmadan entry metnini, yazarını ve tarihini gösteren hızlı önizleme kartı.

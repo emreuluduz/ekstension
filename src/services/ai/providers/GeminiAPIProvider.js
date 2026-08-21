@@ -1,7 +1,7 @@
 import { BaseAIProvider } from '../BaseAIProvider.js';
 
 /**
- * Provider for Official Google Gemini API (Gemini 1.5 / 2.0 Flash)
+ * Provider for Official Google Gemini API (Gemini 3.5 Flash Lite)
  * Uses free API keys from Google AI Studio.
  */
 export class GeminiAPIProvider extends BaseAIProvider {

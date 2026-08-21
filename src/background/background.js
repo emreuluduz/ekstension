@@ -2,8 +2,6 @@ import { Topics, SiteAnalyzer } from './topics.js';
 import { MESSAGE_TYPES, STORAGE_KEYS } from '../utils/constants.js';
 import { Storage } from '../actions/js/storage.js';
 import { debounce } from '../utils/debounce.js';
-import { summarizerTaskManager } from './summarizer-task.js';
-import { aiService } from '../services/ai/AIService.js';
 
 // Context menu oluştur
 chrome.runtime.onInstalled.addListener(() => {
@@ -422,75 +420,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else {
           sendResponse({ success: false });
         }
-      } catch (err) {
-        sendResponse({ success: false, error: err.message });
-      }
-    })();
-    return true;
-  }
-
-  // --- AI Summarizer Messages ---
-  if (message.action === MESSAGE_TYPES.CHECK_AI_AVAILABILITY) {
-    (async () => {
-      try {
-        const status = await aiService.checkAvailability();
-        sendResponse({ success: true, status });
-      } catch (err) {
-        sendResponse({ success: false, error: err.message });
-      }
-    })();
-    return true;
-  }
-
-  if (message.action === MESSAGE_TYPES.START_TOPIC_SUMMARY) {
-    (async () => {
-      try {
-        summarizerTaskManager.startTopicSummary(
-          message.topicUrl,
-          message.topicTitle,
-          sender?.tab?.id,
-          message.mode || 'auto',
-          message.initialEntries || null,
-          message.initialTotalPages || null
-        );
-        sendResponse({ success: true });
-      } catch (err) {
-        sendResponse({ success: false, error: err.message });
-      }
-    })();
-    return true;
-  }
-
-  if (message.action === MESSAGE_TYPES.CANCEL_TOPIC_SUMMARY) {
-    (async () => {
-      try {
-        await summarizerTaskManager.cancelSummary();
-        sendResponse({ success: true });
-      } catch (err) {
-        sendResponse({ success: false, error: err.message });
-      }
-    })();
-    return true;
-  }
-
-  if (message.action === MESSAGE_TYPES.GET_SUMMARY_STATUS) {
-    (async () => {
-      try {
-        const current = summarizerTaskManager.activeTask;
-        const stored = await chrome.storage.local.get('active_summary_task');
-        sendResponse({ success: true, task: current || stored.active_summary_task || null });
-      } catch (err) {
-        sendResponse({ success: false, error: err.message });
-      }
-    })();
-    return true;
-  }
-
-  if (message.action === MESSAGE_TYPES.SUMMARIZE_SINGLE_ENTRY) {
-    (async () => {
-      try {
-        const summary = await aiService.summarizeSingleEntry(message.entryText, message.author);
-        sendResponse({ success: true, summary });
       } catch (err) {
         sendResponse({ success: false, error: err.message });
       }

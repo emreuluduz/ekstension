@@ -20,15 +20,7 @@ export const MESSAGE_TYPES = {
   PARSE_SEARCH_RESULTS_RESPONSE: 'parseSearchResultsResponse',
   START_CLOUDFLARE_SOLVER: 'startCloudflareSolver',
   CLOUDFLARE_RESOLVED: 'cloudflareResolved',
-  CANCEL_CLOUDFLARE_SOLVER: 'cancelCloudflareSolver',
-  START_TOPIC_SUMMARY: 'startTopicSummary',
-  CANCEL_TOPIC_SUMMARY: 'cancelTopicSummary',
-  GET_SUMMARY_STATUS: 'getSummaryStatus',
-  SUMMARY_PROGRESS: 'summaryProgress',
-  SUMMARY_COMPLETED: 'summaryCompleted',
-  SUMMARY_ERROR: 'summaryError',
-  CHECK_AI_AVAILABILITY: 'checkAIAvailability',
-  SUMMARIZE_SINGLE_ENTRY: 'summarizeSingleEntry'
+  CANCEL_CLOUDFLARE_SOLVER: 'cancelCloudflareSolver'
 }; 
 
 export const SUPPORTED_SITES = {
