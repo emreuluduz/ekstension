@@ -89,6 +89,8 @@
                 "src/content/power-tools/power-tools.css"
             ],
             "js": [
+                "src/services/cache/TopicCache.js",
+                "src/services/EntryFetcher.js",
                 "src/content/filter.js",
                 "src/content/power-tools/zen-mode.js",
                 "src/content/power-tools/bookmarks.js",

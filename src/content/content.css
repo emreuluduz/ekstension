@@ -1089,3 +1089,106 @@ body.theme-dark .ekst-ai-dropdown-item-desc,
 body[data-theme="dark"] .ekst-ai-dropdown-item-desc {
   color: #94a3b8;
 }
+
+/* ====== Bilgi Filtresi (Knowledge Filter) ====== */
+
+.ekstension-knowledge-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1.5px solid #8b5cf6;
+  border-radius: 8px;
+  background: transparent;
+  color: #8b5cf6;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.ekstension-knowledge-filter-btn:hover {
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.ekstension-knowledge-filter-btn.active {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: #ffffff;
+  border-color: #7c3aed;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+}
+
+.ekstension-knowledge-filter-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.ekstension-knowledge-filter-btn .badge-count {
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+/* Gizlenen entry (Bilgi filtresi) */
+.ekstension-hide-non-knowledge {
+  display: none !important;
+}
+
+/* Analiz bekleyen entry (yeni gelen) */
+.ekstension-knowledge-pending {
+  opacity: 0.2;
+  max-height: 80px;
+  overflow: hidden;
+  transition: opacity 0.4s ease, max-height 0.4s ease;
+  position: relative;
+}
+
+.ekstension-knowledge-pending::after {
+  content: '🧠 Bilgi analizi yapılıyor...';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  font-weight: 600;
+  color: #8b5cf6;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px 10px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+}
+
+/* AI onayladıktan sonra fade-in */
+.ekstension-knowledge-approved {
+  opacity: 1;
+  max-height: none;
+  transition: opacity 0.4s ease;
+}
+
+/* Dark Theme Overrides for Knowledge Filter */
+body.theme-dark .ekstension-knowledge-filter-btn,
+body[data-theme="dark"] .ekstension-knowledge-filter-btn {
+  border-color: #a78bfa;
+  color: #c4b5fd;
+}
+
+body.theme-dark .ekstension-knowledge-filter-btn:hover,
+body[data-theme="dark"] .ekstension-knowledge-filter-btn:hover {
+  background: rgba(167, 139, 250, 0.12);
+}
+
+body.theme-dark .ekstension-knowledge-filter-btn.active,
+body[data-theme="dark"] .ekstension-knowledge-filter-btn.active {
+  background: linear-gradient(135deg, #6d28d9, #5b21b6);
+  color: #ffffff;
+  border-color: #7c3aed;
+  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.4);
+}
+
+body.theme-dark .ekstension-knowledge-pending::after,
+body[data-theme="dark"] .ekstension-knowledge-pending::after {
+  color: #c4b5fd;
+  background: rgba(30, 20, 50, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}

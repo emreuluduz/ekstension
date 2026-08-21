@@ -9,8 +9,11 @@
 let state = {
   filteredWords: [],
   blockedAuthors: [],
-  mediaOnlyActive: false
+  mediaOnlyActive: false,
+  knowledgeFilterActive: false
 };
+
+let knowledgeFilterCache = null; // TopicCache instance
 
 let isProcessing = false;
 let observerTimeout = null;
@@ -494,7 +497,7 @@ function showImageError(container, originalUrl) {
   `;
 }
 
-// 4. "Sadece Medya / Linkli Entry'ler" Filtre Butonu
+// 4. "Sadece Medya / Linkli Entry'ler" & "Sadece Bilgi" Filtre Butonları
 function injectMediaFilterButton() {
   const entryList = document.querySelector('#entry-item-list');
   if (!entryList) return;
@@ -527,6 +530,252 @@ function injectMediaFilterButton() {
   updateMediaFilterCounts();
 }
 
+function injectKnowledgeFilterButton() {
+  const entryList = document.querySelector('#entry-item-list');
+  if (!entryList) return;
+
+  const topicTitle = document.querySelector('#topic h1');
+  if (!topicTitle) return;
+
+  let container = document.querySelector('.ekstension-media-filter-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'ekstension-media-filter-container';
+    topicTitle.parentNode.insertBefore(container, topicTitle.nextSibling);
+  }
+
+  let kfBtn = document.getElementById('ekstension-knowledge-filter-btn');
+  if (!kfBtn) {
+    kfBtn = document.createElement('button');
+    kfBtn.id = 'ekstension-knowledge-filter-btn';
+    kfBtn.className = 'ekstension-knowledge-filter-btn';
+    kfBtn.innerHTML = '🧠 Sadece Bilgi';
+    kfBtn.title = 'Google Gemini AI ile tüm entry\'leri analiz edip sadece konuyla alakalı, bilgi içeren entry\'leri göster';
+
+    kfBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (state.knowledgeFilterActive) {
+        deactivateKnowledgeFilter();
+      } else {
+        activateKnowledgeFilter();
+      }
+    });
+
+    container.appendChild(kfBtn);
+  }
+
+  if (state.knowledgeFilterActive) {
+    updateKnowledgeFilterCounts();
+  }
+}
+
+async function activateKnowledgeFilter() {
+  const btn = document.getElementById('ekstension-knowledge-filter-btn');
+
+  // 1. API Key kontrolü
+  const apiKey = await getStoredGeminiApiKey();
+  if (!apiKey) {
+    renderAPIKeySetupCard(() => activateKnowledgeFilter());
+    return;
+  }
+
+  const Fetcher = window.EkstensionEntryFetcher;
+  const CacheClass = window.EkstensionTopicCache;
+  if (!Fetcher || !CacheClass) {
+    console.error('[ek$tension] EntryFetcher or TopicCache not loaded');
+    return;
+  }
+
+  const slug = Fetcher.getTopicSlug();
+  const title = Fetcher.getTopicTitle();
+
+  // 2. Cache kontrolü
+  if (!knowledgeFilterCache) {
+    knowledgeFilterCache = new CacheClass(slug);
+  }
+  await knowledgeFilterCache.load();
+
+  if (knowledgeFilterCache.isValid() && knowledgeFilterCache.hasFlagData('isInformative')) {
+    // Cache'ten anında filtrele
+    state.knowledgeFilterActive = true;
+    applyKnowledgeFilterToDOM();
+    updateKnowledgeFilterButton();
+    return;
+  }
+
+  // 3. Tüm sayfalardan entry'leri topla
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Analiz ediliyor...';
+  }
+
+  try {
+    const { entries: allEntries, totalPages } = await Fetcher.fetchAllEntries({
+      mode: 'full',
+      progressLabel: '🧠 Bilgi Filtresi',
+      onProgress: ({ progress, message }) => {
+        showFloatingProgressPill({
+          topicSlug: slug,
+          topicTitle: title,
+          progress,
+          statusText: message
+        });
+      }
+    });
+
+    if (allEntries.length === 0) {
+      removeFloatingProgressPill();
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '🧠 Sadece Bilgi';
+      }
+      showToastNotification('⚠️ Uyarı', 'Analiz edilecek entry bulunamadı.');
+      return;
+    }
+
+    showFloatingProgressPill({
+      topicSlug: slug,
+      topicTitle: title,
+      progress: 75,
+      statusText: `🧠 ${allEntries.length} entry Google Gemini AI ile analiz ediliyor...`
+    });
+
+    // 4. hasMedia flag'lerini yerel olarak cache'le
+    allEntries.forEach(e => {
+      const entryLi = document.querySelector(`#entry-item-list > li[data-id="${e.id}"]`);
+      if (entryLi) {
+        knowledgeFilterCache.setEntryFlag(e.id, 'hasMedia', hasMediaOrLinks(entryLi));
+      }
+    });
+
+    // 5. Gemini AI ile sınıflandır
+    const informativeIds = await classifyEntriesViaGemini(allEntries, title);
+
+    // 6. Sonuçları cache'e yaz
+    allEntries.forEach(e => {
+      knowledgeFilterCache.setEntryFlag(e.id, 'isInformative', informativeIds.has(e.id));
+    });
+
+    knowledgeFilterCache.setMeta({
+      topicTitle: title,
+      pagesAnalyzed: totalPages,
+      totalPages
+    });
+
+    await knowledgeFilterCache.save();
+
+    // 7. DOM'a uygula
+    removeFloatingProgressPill();
+    state.knowledgeFilterActive = true;
+    applyKnowledgeFilterToDOM();
+    updateKnowledgeFilterButton();
+
+    const infoCount = informativeIds.size;
+    const hiddenCount = allEntries.length - infoCount;
+    showToastNotification(
+      '🧠 Bilgi Filtresi Aktif',
+      `${allEntries.length} entry analiz edildi → ${infoCount} bilgi entry'si gösteriliyor (${hiddenCount} gizlendi)`
+    );
+
+  } catch (err) {
+    console.error('[ek$tension] Knowledge filter error:', err);
+    removeFloatingProgressPill();
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '🧠 Sadece Bilgi';
+    }
+    if (err.message === 'KEY_MISSING') {
+      renderAPIKeySetupCard(() => activateKnowledgeFilter());
+    } else {
+      showToastNotification('⚠️ Analiz Hatası', err.message || 'Bilgi filtresi uygulanamadı.');
+    }
+  }
+}
+
+function deactivateKnowledgeFilter() {
+  state.knowledgeFilterActive = false;
+  const entries = document.querySelectorAll('#entry-item-list > li');
+  entries.forEach(entry => {
+    entry.classList.remove('ekstension-hide-non-knowledge');
+    entry.classList.remove('ekstension-knowledge-pending');
+    entry.classList.remove('ekstension-knowledge-approved');
+  });
+  updateKnowledgeFilterButton();
+}
+
+function applyKnowledgeFilterToDOM() {
+  if (!state.knowledgeFilterActive || !knowledgeFilterCache) return;
+
+  const entries = document.querySelectorAll('#entry-item-list > li');
+  let shownCount = 0;
+  let totalCount = 0;
+
+  entries.forEach(entry => {
+    const id = entry.getAttribute('data-id') || '';
+    if (!id) return;
+    totalCount++;
+
+    const isInformative = knowledgeFilterCache.getEntryFlag(id, 'isInformative');
+
+    if (isInformative === true) {
+      entry.classList.remove('ekstension-hide-non-knowledge');
+      entry.classList.remove('ekstension-knowledge-pending');
+      entry.classList.add('ekstension-knowledge-approved');
+      shownCount++;
+    } else if (isInformative === false) {
+      entry.classList.add('ekstension-hide-non-knowledge');
+      entry.classList.remove('ekstension-knowledge-pending');
+      entry.classList.remove('ekstension-knowledge-approved');
+    } else {
+      // Henüz analiz edilmemiş — pending durumu
+      entry.classList.add('ekstension-knowledge-pending');
+      entry.classList.remove('ekstension-hide-non-knowledge');
+    }
+  });
+
+  updateKnowledgeFilterCounts(shownCount, totalCount);
+}
+
+function updateKnowledgeFilterCounts(shown, total) {
+  const btn = document.getElementById('ekstension-knowledge-filter-btn');
+  if (!btn) return;
+
+  if (shown === undefined || total === undefined) {
+    const entries = document.querySelectorAll('#entry-item-list > li');
+    total = 0;
+    shown = 0;
+    entries.forEach(entry => {
+      const id = entry.getAttribute('data-id') || '';
+      if (!id) return;
+      total++;
+      if (knowledgeFilterCache && knowledgeFilterCache.getEntryFlag(id, 'isInformative') === true) {
+        shown++;
+      }
+    });
+  }
+
+  const badge = btn.querySelector('.badge-count');
+  if (badge) {
+    badge.textContent = `${shown}/${total}`;
+  }
+}
+
+function updateKnowledgeFilterButton() {
+  const btn = document.getElementById('ekstension-knowledge-filter-btn');
+  if (!btn) return;
+
+  btn.disabled = false;
+
+  if (state.knowledgeFilterActive) {
+    btn.classList.add('active');
+    btn.innerHTML = '🧠 Bilgi Filtresi Aktif ✓ <span class="badge-count">0/0</span>';
+    applyKnowledgeFilterToDOM();
+  } else {
+    btn.classList.remove('active');
+    btn.innerHTML = '🧠 Sadece Bilgi';
+  }
+}
+
 function hasMediaOrLinks(entry) {
   const content = entry.querySelector('.content');
   if (!content) return false;
@@ -547,7 +796,22 @@ function updateMediaFilterCounts() {
 
   let mediaCount = 0;
   entries.forEach(entry => {
-    if (hasMediaOrLinks(entry)) {
+    const id = entry.getAttribute('data-id') || '';
+    let hasMedia = false;
+
+    if (knowledgeFilterCache && id) {
+      const cached = knowledgeFilterCache.getEntryFlag(id, 'hasMedia');
+      if (cached !== null) {
+        hasMedia = cached;
+      } else {
+        hasMedia = hasMediaOrLinks(entry);
+        knowledgeFilterCache.setEntryFlag(id, 'hasMedia', hasMedia);
+      }
+    } else {
+      hasMedia = hasMediaOrLinks(entry);
+    }
+
+    if (hasMedia) {
       mediaCount++;
     }
   });
@@ -555,6 +819,10 @@ function updateMediaFilterCounts() {
   const countBadge = document.querySelector('#ekstension-media-filter-btn .badge-count');
   if (countBadge) {
     countBadge.textContent = `${mediaCount}/${entries.length}`;
+  }
+
+  if (knowledgeFilterCache) {
+    knowledgeFilterCache.save().catch(() => {});
   }
 }
 
@@ -568,7 +836,22 @@ function applyMediaOnlyFilter() {
       return;
     }
 
-    if (hasMediaOrLinks(entry)) {
+    const id = entry.getAttribute('data-id') || '';
+    let hasMedia = false;
+
+    if (knowledgeFilterCache && id) {
+      const cached = knowledgeFilterCache.getEntryFlag(id, 'hasMedia');
+      if (cached !== null) {
+        hasMedia = cached;
+      } else {
+        hasMedia = hasMediaOrLinks(entry);
+        knowledgeFilterCache.setEntryFlag(id, 'hasMedia', hasMedia);
+      }
+    } else {
+      hasMedia = hasMediaOrLinks(entry);
+    }
+
+    if (hasMedia) {
       entry.classList.remove('ekstension-hide-non-media');
     } else {
       entry.classList.add('ekstension-hide-non-media');
@@ -986,6 +1269,9 @@ function initEntryHoverPreview() {
 // ==========================================================================
 
 function getCurrentTopicSlug(mode = '') {
+  if (window.EkstensionEntryFetcher) {
+    return window.EkstensionEntryFetcher.getTopicSlug(mode);
+  }
   try {
     const pathname = window.location.pathname.replace(/^\//, '');
     const baseSlug = pathname.split('?')[0] || 'default_topic';
@@ -996,11 +1282,17 @@ function getCurrentTopicSlug(mode = '') {
 }
 
 function isTopicFilteredView() {
+  if (window.EkstensionEntryFetcher) {
+    return window.EkstensionEntryFetcher.isFilteredView();
+  }
   const search = window.location.search || '';
   return search.includes('a=popular') || search.includes('a=dailynice') || search.includes('a=nice');
 }
 
 function getCurrentTopicTitle() {
+  if (window.EkstensionEntryFetcher) {
+    return window.EkstensionEntryFetcher.getTopicTitle();
+  }
   const h1 = document.querySelector('#topic h1');
   if (!h1) return document.title || 'Ekşi Sözlük Başlığı';
   const clone = h1.cloneNode(true);
@@ -1142,6 +1434,9 @@ function toggleAIDropdownMenu(wrapper) {
 }
 
 function extractEntriesFromCurrentPage() {
+  if (window.EkstensionEntryFetcher) {
+    return window.EkstensionEntryFetcher.extractEntriesFromDOM(document);
+  }
   const lis = document.querySelectorAll('#entry-item-list > li');
   const entries = [];
   lis.forEach(li => {
@@ -1164,6 +1459,9 @@ function extractEntriesFromCurrentPage() {
 }
 
 function extractTotalPagesFromCurrentPage() {
+  if (window.EkstensionEntryFetcher) {
+    return window.EkstensionEntryFetcher.extractTotalPages(document);
+  }
   const pager = document.querySelector('.pager');
   if (pager && pager.getAttribute('data-pagecount')) {
     return parseInt(pager.getAttribute('data-pagecount'), 10) || 1;
@@ -1223,6 +1521,72 @@ async function callGeminiFlashAPI(promptText, systemInstruction = '') {
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
   if (!text) throw new Error('Gemini API boş yanıt döndürdü.');
   return text;
+}
+
+/**
+ * Entry'leri Gemini AI ile sınıflandır — başlıkla alakalı bilgi içerenleri belirle.
+ * @param {Array<{id, author, content}>} entries
+ * @param {string} topicTitle
+ * @returns {Promise<Set<string>>} Bilgi içeren entry ID'lerinin Set'i
+ */
+async function classifyEntriesViaGemini(entries, topicTitle) {
+  if (!entries || entries.length === 0) return new Set();
+
+  // Entry'leri formatlayıp prompt'a ekle
+  const formattedEntries = entries.map(e => {
+    const cleanContent = e.content
+      .replace(/<br\s*[\/]?>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .trim();
+    // Her entry'yi en fazla 800 karakterle sınırla (token tasarrufu)
+    const truncated = cleanContent.length > 800
+      ? cleanContent.substring(0, 800) + '...'
+      : cleanContent;
+    return `[ID: ${e.id} | @${e.author || 'anonim'}]:\n${truncated}`;
+  });
+
+  const prompt = `Başlık: "${topicTitle}"
+
+Aşağıdaki Ekşi Sözlük entry'lerini oku. Her entry'nin başlıkla alakalı, gerçekten bilgi veya değer içerip içermediğini belirle.
+
+BİLGİ İÇEREN ENTRY KRİTERLERİ:
+✅ Konu hakkında somut bilgi, veri veya kaynak paylaşan
+✅ Kişisel deneyim veya gözleme dayalı faydalı içerik
+✅ Anlamlı analiz, karşılaştırma veya tavsiye sunan
+✅ Konuyu farklı bir açıdan aydınlatan
+
+BİLGİ İÇERMEYEN ENTRY KRİTERLERİ:
+❌ Başlıkla alakasız, konu dışı yorum
+❌ Sadece espri, tek satırlık tepki veya emoji
+❌ İçeriksiz "bkz" yönlendirmesi
+❌ Tekrar eden, özgün katkısı olmayan yorum
+❌ Kişisel serzeniş veya rant (bilgi değeri olmayan)
+
+ENTRY'LER:
+${formattedEntries.join('\n\n---\n\n')}
+
+CEVAP FORMATI:
+Sadece bilgi içeren entry'lerin ID'lerini virgülle ayırarak yaz.
+Hiçbir entry bilgi içermiyorsa "YOK" yaz.
+Başka hiçbir açıklama ekleme.
+Örnek: 17302831,17302900,17303012`;
+
+  const sysPrompt = 'Sen Ekşi Sözlük entry\'lerini tarafsız olarak sınıflandıran bir yapay zeka asistanısın. Sadece istenen formatta (virgülle ayrılmış ID listesi) yanıt ver. Başka hiçbir açıklama, giriş cümlesi veya yorum ekleme.';
+
+  const resultText = await callGeminiFlashAPI(prompt, sysPrompt);
+
+  // "YOK" kontrolü
+  if (resultText.trim().toUpperCase() === 'YOK') {
+    return new Set();
+  }
+
+  // ID'leri parse et
+  const ids = resultText
+    .split(/[,\s]+/)
+    .map(s => s.trim())
+    .filter(s => /^\d+$/.test(s));
+
+  return new Set(ids);
 }
 
 function renderAPIKeySetupCard(onSavedCallback) {
@@ -1362,67 +1726,30 @@ async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
   });
 
   try {
-    // 3. Extract Page 1 from current DOM
-    let allEntries = extractEntriesFromCurrentPage();
-    let totalPages = extractTotalPagesFromCurrentPage();
+    // 3. Extract & Crawl entries via EntryFetcher
+    let allEntries = [];
+    let totalPages = 1;
 
-    console.log(`[ek$tension] Page 1 loaded with ${allEntries.length} entries. Total pages: ${totalPages}`);
-
-    // 4. Crawl remaining pages if totalPages > 1
-    const baseCleanUrl = window.location.href.split('?')[0];
-    const queryParams = effectiveMode === 'popular' ? 'a=popular' : '';
-
-    const getPageUrl = (p) => {
-      if (queryParams) return `${baseCleanUrl}?${queryParams}&p=${p}`;
-      return `${baseCleanUrl}?p=${p}`;
-    };
-
-    if (totalPages > 1) {
-      for (let page = 2; page <= totalPages; page++) {
-        const crawlPercent = 10 + Math.round(((page - 1) / totalPages) * 50);
-        showFloatingProgressPill({
-          topicSlug: slug,
-          topicTitle: title,
-          mode: effectiveMode,
-          modeLabel,
-          progress: crawlPercent,
-          statusText: `${modeLabel}: Sayfa ${page} / ${totalPages} taranıyor (${allEntries.length} entry)...`
-        });
-
-        // Delay 250ms to be safe and polite
-        await new Promise(r => setTimeout(r, 250));
-
-        try {
-          const resp = await fetch(getPageUrl(page), {
-            credentials: 'include',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    if (window.EkstensionEntryFetcher) {
+      const fetchResult = await window.EkstensionEntryFetcher.fetchAllEntries({
+        mode: effectiveMode,
+        progressLabel: modeLabel,
+        onProgress: ({ progress, message }) => {
+          showFloatingProgressPill({
+            topicSlug: slug,
+            topicTitle: title,
+            mode: effectiveMode,
+            modeLabel,
+            progress,
+            statusText: message
           });
-          if (resp.ok) {
-            const html = await resp.text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const lis = doc.querySelectorAll('#entry-item-list > li');
-            lis.forEach(li => {
-              const id = li.getAttribute('data-id') || li.id?.replace('entry-item-', '') || '';
-              const author = li.getAttribute('data-author') || li.querySelector('.entry-author')?.textContent?.trim() || '';
-              const contentEl = li.querySelector('.content');
-              const dateEl = li.querySelector('.entry-date');
-              const favCount = li.getAttribute('data-favorite-count') || '0';
-              if (contentEl) {
-                allEntries.push({
-                  id,
-                  author,
-                  date: dateEl ? dateEl.textContent.trim() : '',
-                  content: contentEl.innerHTML,
-                  favCount
-                });
-              }
-            });
-          }
-        } catch (pageErr) {
-          console.warn('[ek$tension] Page crawl error:', pageErr);
         }
-      }
+      });
+      allEntries = fetchResult.entries;
+      totalPages = fetchResult.totalPages;
+    } else {
+      allEntries = extractEntriesFromCurrentPage();
+      totalPages = extractTotalPagesFromCurrentPage();
     }
 
     if (allEntries.length === 0) {
@@ -1816,10 +2143,14 @@ function runAllEnhancements() {
     applyAuthorBlocking();
     applyMediaPreviews();
     injectMediaFilterButton();
+    injectKnowledgeFilterButton();
     injectAISummarizeButton();
     injectSingleEntrySummarizeButtons();
     if (state.mediaOnlyActive) {
       applyMediaOnlyFilter();
+    }
+    if (state.knowledgeFilterActive) {
+      applyKnowledgeFilterToDOM();
     }
   } catch (err) {
     console.error('ek$tension enhancement error:', err);
@@ -1848,6 +2179,13 @@ function initialize() {
   }
 
   notifyPageReady();
+
+  // TopicCache'i başlat (medya filtresi ve bilgi filtresi için)
+  if (window.EkstensionTopicCache && window.EkstensionEntryFetcher) {
+    const slug = window.EkstensionEntryFetcher.getTopicSlug();
+    knowledgeFilterCache = new window.EkstensionTopicCache(slug);
+    knowledgeFilterCache.load().catch(() => {});
+  }
 
   chrome.runtime.sendMessage({ action: 'getFilteredWords' }, (words) => {
     state.filteredWords = words || [];
@@ -1929,10 +2267,96 @@ const observer = new MutationObserver((mutations) => {
 const targetNode = document.getElementById('content-body') || document.body;
 observer.observe(targetNode, { childList: true, subtree: true });
 
+// Bilgi Filtresi — Artımlı Analiz (Infinite Scroll / Canlı Akış)
+let knowledgeEntryBuffer = [];
+let knowledgeDebounceTimer = null;
+const KNOWLEDGE_BUFFER_THRESHOLD = 20;
+const KNOWLEDGE_DEBOUNCE_MS = 3000;
+
+async function handleNewEntriesForKnowledgeFilter() {
+  if (!state.knowledgeFilterActive || !knowledgeFilterCache) return;
+
+  const Fetcher = window.EkstensionEntryFetcher;
+  if (!Fetcher) return;
+
+  // Sayfadaki tüm entry ID'leri al
+  const allEntryIds = Array.from(
+    document.querySelectorAll('#entry-item-list > li[data-id]')
+  ).map(li => li.getAttribute('data-id')).filter(Boolean);
+
+  // Cache'te olmayan (henüz analiz edilmemiş) yeni ID'leri bul
+  const newIds = knowledgeFilterCache.getMissingEntryIds(allEntryIds, 'isInformative');
+  if (newIds.length === 0) return;
+
+  // Yeni entry'leri geçici olarak pending yap
+  newIds.forEach(id => {
+    const li = document.querySelector(`#entry-item-list > li[data-id="${id}"]`);
+    if (li) {
+      li.classList.add('ekstension-knowledge-pending');
+    }
+  });
+
+  // Buffer'a ekle
+  knowledgeEntryBuffer.push(...newIds.filter(id => !knowledgeEntryBuffer.includes(id)));
+
+  // Buffer eşiğine ulaştıysa hemen analiz et
+  if (knowledgeEntryBuffer.length >= KNOWLEDGE_BUFFER_THRESHOLD) {
+    await flushKnowledgeBuffer();
+    return;
+  }
+
+  // Değilse debounce ile bekle
+  clearTimeout(knowledgeDebounceTimer);
+  knowledgeDebounceTimer = setTimeout(() => flushKnowledgeBuffer(), KNOWLEDGE_DEBOUNCE_MS);
+}
+
+async function flushKnowledgeBuffer() {
+  if (knowledgeEntryBuffer.length === 0) return;
+
+  const idsToAnalyze = [...knowledgeEntryBuffer];
+  knowledgeEntryBuffer = [];
+
+  const Fetcher = window.EkstensionEntryFetcher;
+  if (!Fetcher) return;
+
+  try {
+    const entries = Fetcher.extractEntriesById(idsToAnalyze);
+    if (entries.length === 0) return;
+
+    const title = Fetcher.getTopicTitle();
+    const informativeIds = await classifyEntriesViaGemini(entries, title);
+
+    // Cache'e yaz
+    entries.forEach(e => {
+      knowledgeFilterCache.setEntryFlag(e.id, 'isInformative', informativeIds.has(e.id));
+      // hasMedia'yı da cache'le
+      const entryLi = document.querySelector(`#entry-item-list > li[data-id="${e.id}"]`);
+      if (entryLi) {
+        knowledgeFilterCache.setEntryFlag(e.id, 'hasMedia', hasMediaOrLinks(entryLi));
+      }
+    });
+
+    await knowledgeFilterCache.save();
+
+    // DOM'a uygula
+    applyKnowledgeFilterToDOM();
+  } catch (err) {
+    console.warn('[ek$tension] Incremental knowledge analysis error:', err);
+    // Hata durumunda pending entry'leri göster (gizleme)
+    idsToAnalyze.forEach(id => {
+      const li = document.querySelector(`#entry-item-list > li[data-id="${id}"]`);
+      if (li) {
+        li.classList.remove('ekstension-knowledge-pending');
+      }
+    });
+  }
+}
+
 // Power Tools (Sonsuz Kaydırma & Canlı Akış) tarafından yeni entry eklendiğinde araçları çalıştır
 window.addEventListener('ekstension:entries-added', () => {
   if (observerTimeout) clearTimeout(observerTimeout);
   observerTimeout = setTimeout(() => {
     runAllEnhancements();
+    handleNewEntriesForKnowledgeFilter();
   }, 100);
 });
