@@ -421,25 +421,72 @@ function applyMediaPreviews() {
       const previewBtn = document.createElement('button');
       previewBtn.className = 'ekstension-preview-btn';
       previewBtn.textContent = isImg ? '🖼️ Önizle' : '▶️ Oynat';
-      previewBtn.title = isImg ? 'Görseli doğrudan aç' : 'Videoyu oynat';
+      previewBtn.title = isImg ? 'Görseli doğrudan aç/kapat' : 'Videoyu oynat/kapat';
 
       let container = null;
+
+      const closeMedia = () => {
+        if (container) {
+          container.style.display = 'none';
+        }
+        previewBtn.classList.remove('active');
+        previewBtn.textContent = isImg ? '🖼️ Önizle' : '▶️ Oynat';
+      };
+
+      const openMedia = () => {
+        if (container) {
+          container.style.display = 'block';
+        }
+        previewBtn.classList.add('active');
+        previewBtn.textContent = isImg ? '🖼️ Gizle' : '▶️ Kapat';
+      };
 
       previewBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
 
         if (container) {
-          container.style.display = container.style.display === 'none' ? 'block' : 'none';
+          if (container.style.display === 'none') {
+            openMedia();
+          } else {
+            closeMedia();
+          }
           return;
         }
 
         container = document.createElement('div');
         container.className = 'ekstension-media-container';
-        link.parentNode.insertBefore(container, link.nextSibling);
+
+        // previewBtn'den hemen sonra ekle (böylece buton ve link görselin üstünde kalır)
+        previewBtn.parentNode.insertBefore(container, previewBtn.nextSibling);
+        openMedia();
 
         if (isImg) {
-          container.innerHTML = '<div class="ekstension-media-loading">⏳ Görsel yükleniyor...</div>';
+          container.innerHTML = `
+            <div class="ekstension-media-header">
+              <span class="ekstension-media-title">🖼️ Görsel Önizleme</span>
+              <div class="ekstension-media-actions">
+                <button class="ekstension-media-zoom-btn" type="button" title="Görseli tam boyut aç / sığdır">🔍 Büyüt</button>
+                <a class="ekstension-media-link-btn" href="${href}" target="_blank" rel="noopener noreferrer" title="Orijinal bağlantıyı yeni sekmede aç">↗ Aç</a>
+                <button class="ekstension-media-close-btn" type="button" title="Önizlemeyi Kapat">✕</button>
+              </div>
+            </div>
+            <div class="ekstension-media-body">
+              <div class="ekstension-media-loading">⏳ Görsel yükleniyor...</div>
+            </div>
+          `;
+
+          const closeBtn = container.querySelector('.ekstension-media-close-btn');
+          if (closeBtn) {
+            closeBtn.addEventListener('click', (ev) => {
+              ev.preventDefault();
+              ev.stopPropagation();
+              closeMedia();
+            });
+          }
+
+          const zoomBtn = container.querySelector('.ekstension-media-zoom-btn');
+          const bodyEl = container.querySelector('.ekstension-media-body');
 
           try {
             const directSrc = await resolveMediaUrl(href);
@@ -448,16 +495,37 @@ function applyMediaPreviews() {
               return;
             }
 
-            container.innerHTML = '';
+            bodyEl.innerHTML = '';
             const img = document.createElement('img');
             img.className = 'ekstension-image-preview';
             img.src = directSrc;
             img.alt = 'Görsel Önizleme';
             img.loading = 'lazy';
             img.referrerPolicy = 'no-referrer';
+            img.title = 'Büyütmek / sığdırmak için tıklayın';
+
+            const toggleZoom = () => {
+              const isExpanded = img.classList.toggle('expanded');
+              if (zoomBtn) {
+                zoomBtn.textContent = isExpanded ? '🔍 Küçült' : '🔍 Büyüt';
+              }
+            };
+
+            img.addEventListener('click', (ev) => {
+              ev.preventDefault();
+              ev.stopPropagation();
+              toggleZoom();
+            });
+
+            if (zoomBtn) {
+              zoomBtn.addEventListener('click', (ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+                toggleZoom();
+              });
+            }
 
             img.onerror = () => {
-              // Eğer dönüştürülmüş link başarısız olduysa ve orijinal href farklıysa orijinali dene
               if (img.src !== href && directSrc !== href) {
                 img.onerror = () => showImageError(container, href);
                 img.src = href;
@@ -466,19 +534,34 @@ function applyMediaPreviews() {
               }
             };
 
-            container.appendChild(img);
+            bodyEl.appendChild(img);
           } catch (err) {
             showImageError(container, href);
           }
         } else if (ytId) {
-          const wrapper = document.createElement('div');
-          wrapper.className = 'ekstension-video-wrapper';
-          const iframe = document.createElement('iframe');
-          iframe.src = `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1`;
-          iframe.allowFullscreen = true;
-          iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-          wrapper.appendChild(iframe);
-          container.appendChild(wrapper);
+          container.innerHTML = `
+            <div class="ekstension-media-header">
+              <span class="ekstension-media-title">▶️ YouTube Videosu</span>
+              <div class="ekstension-media-actions">
+                <a class="ekstension-media-link-btn" href="${href}" target="_blank" rel="noopener noreferrer" title="YouTube'da aç">↗ YouTube</a>
+                <button class="ekstension-media-close-btn" type="button" title="Kapat">✕</button>
+              </div>
+            </div>
+            <div class="ekstension-media-body" style="padding: 0 !important;">
+              <div class="ekstension-video-wrapper">
+                <iframe src="https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+              </div>
+            </div>
+          `;
+
+          const closeBtn = container.querySelector('.ekstension-media-close-btn');
+          if (closeBtn) {
+            closeBtn.addEventListener('click', (ev) => {
+              ev.preventDefault();
+              ev.stopPropagation();
+              closeMedia();
+            });
+          }
         }
       });
 
@@ -489,7 +572,8 @@ function applyMediaPreviews() {
 
 function showImageError(container, originalUrl) {
   if (!container) return;
-  container.innerHTML = `
+  const bodyEl = container.querySelector('.ekstension-media-body') || container;
+  bodyEl.innerHTML = `
     <div class="ekstension-media-error">
       <span>⚠️ Görsel doğrudan yüklenemedi (silinmiş veya harici korumalı olabilir).</span>
       <a href="${originalUrl}" target="_blank" rel="noopener noreferrer">Yeni sekmede aç ↗</a>
