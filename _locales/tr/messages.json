@@ -124,7 +124,7 @@
         "description": "Ayarlar destek bölümü başlığı"
     },
     "support_desc": {
-        "message": "ek$tension'ı severek kullanıyorsanız bir kahve ısmarlayarak geliştirmeye destek olabilirsiniz.",
+        "message": "ek$$tension'ı severek kullanıyorsanız bir kahve ısmarlayarak geliştirmeye destek olabilirsiniz.",
         "description": "Ayarlar destek bölümü açıklaması"
     },
     "buy_me_a_coffee_btn": {

@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "__MSG_extension_name__",
     "description": "__MSG_extension_description__",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "default_locale": "tr",
     "permissions": [
         "storage",
@@ -57,18 +57,20 @@
         "48": "icons/icon_48.png",
         "128": "icons/icon_128.png"
     },
-    "web_accessible_resources": [{
-        "resources": [
-            "icons/icon_48.png"
-        ],
-        "matches": [
-            "https://*.youtube.com/*",
-            "https://*.wikipedia.org/*",
-            "https://*.imdb.com/*",
-            "https://*.steampowered.com/*",
-            "https://*.epicgames.com/*"
-        ]
-    }],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "icons/icon_48.png"
+            ],
+            "matches": [
+                "https://*.youtube.com/*",
+                "https://*.wikipedia.org/*",
+                "https://*.imdb.com/*",
+                "https://*.steampowered.com/*",
+                "https://*.epicgames.com/*"
+            ]
+        }
+    ],
     "content_scripts": [
         {
             "matches": [
@@ -103,8 +105,12 @@
                 "https://*.steampowered.com/*",
                 "https://*.epicgames.com/*"
             ],
-            "css": ["src/content/content.css"],
-            "js": ["src/content/content.js"]
+            "css": [
+                "src/content/content.css"
+            ],
+            "js": [
+                "src/content/content.js"
+            ]
         }
     ]
 }
