@@ -90,7 +90,7 @@
         }
       }
 
-      const newEntries = Array.from(doc.querySelectorAll('#entry-item-list > li[data-id]'));
+      const newEntries = Array.from(doc.querySelectorAll('#entry-item-list > li, li[data-id]'));
       const targetList = document.querySelector('#entry-item-list');
 
       if (newEntries.length > 0 && targetList) {
@@ -109,12 +109,15 @@
         targetList.appendChild(divider);
 
         // Mevcut olanları tekrar eklememek için filtrele
-        const existingIds = new Set(Array.from(targetList.querySelectorAll('li[data-id]')).map(el => el.getAttribute('data-id')));
+        const existingIds = new Set(
+          Array.from(targetList.querySelectorAll('li')).map(el => el.getAttribute('data-id') || el.id?.replace('entry-item-', '')).filter(Boolean)
+        );
 
         const addedElements = [];
         newEntries.forEach(entryLi => {
-          const id = entryLi.getAttribute('data-id');
-          if (!existingIds.has(id)) {
+          const id = entryLi.getAttribute('data-id') || entryLi.id?.replace('entry-item-', '') || '';
+          if (id && !existingIds.has(id)) {
+            existingIds.add(id);
             const importedNode = document.importNode(entryLi, true);
             importedNode.classList.add('ekstension-page-fade-in');
             targetList.appendChild(importedNode);
@@ -124,6 +127,7 @@
 
         currentPage = nextPage;
         window.history.replaceState(null, '', url.toString());
+        updatePagerDOM(currentPage, totalPages);
 
         // Toast bildirimi göster
         showToastNotification(`📄 Sayfa ${currentPage} yüklendi (${addedElements.length} entry)`);
@@ -143,7 +147,68 @@
     } finally {
       isLoading = false;
       showLoader(false);
+
+      // Eğer konu bitmediyse ve sentinel hala ekranda görünüyorsa (ör. tüm entry'ler filtrelendi ve sayfa uzamadıysa)
+      // duraksamadan sonraki sayfayı getirmeye devam et
+      if (currentPage < totalPages) {
+        checkSentinelVisibilityAndContinue();
+      }
     }
+  }
+
+  // Pager DOM ve Select elementlerini güncelle
+  function updatePagerDOM(page, total) {
+    try {
+      const pagerEls = document.querySelectorAll('.pager');
+      pagerEls.forEach(pager => {
+        pager.setAttribute('data-currentpage', String(page));
+        if (total) pager.setAttribute('data-pagecount', String(total));
+
+        // Select elementini güncelle
+        const select = pager.querySelector('select');
+        if (select) {
+          select.value = String(page);
+          const options = select.querySelectorAll('option');
+          options.forEach(opt => {
+            if (opt.value === String(page)) {
+              opt.setAttribute('selected', 'selected');
+              opt.selected = true;
+            } else {
+              opt.removeAttribute('selected');
+              opt.selected = false;
+            }
+          });
+        }
+
+        // Aktif sayfa linkini güncelle
+        const currentLink = pager.querySelector('.current, a.active');
+        if (currentLink && currentLink.textContent.trim() !== String(page)) {
+          currentLink.classList.remove('current', 'active');
+          const newCurrentLink = Array.from(pager.querySelectorAll('a')).find(a => a.textContent.trim() === String(page));
+          if (newCurrentLink) {
+            newCurrentLink.classList.add('current');
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('ek$tension updatePagerDOM error:', e);
+    }
+  }
+
+  // Sayfa sonu izleyicisinin viewport'ta kalıp kalmadığını kontrol et ve gerekirse sonraki sayfayı çağır
+  function checkSentinelVisibilityAndContinue() {
+    const sentinel = document.getElementById('ekstension-scroll-sentinel');
+    if (!sentinel || isLoading || currentPage >= totalPages) return;
+
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        if (isLoading || currentPage >= totalPages) return;
+        const rect = sentinel.getBoundingClientRect();
+        if (rect.top <= window.innerHeight + 300) {
+          loadNextPage();
+        }
+      }, 100);
+    });
   }
 
   // Sentinel temizle

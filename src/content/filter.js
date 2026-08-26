@@ -374,9 +374,9 @@ function applyMediaPreviews() {
       // Eğer link zaten işlendiyse veya eklentinin kendi container'ı içindeyse kesinlikle atla
       if (link.hasAttribute('data-ekstension-processed')) return;
       if (link.closest('.ekstension-media-container') ||
-          link.closest('.ekstension-preview-btn') ||
-          link.closest('.ekstension-single-summary-box') ||
-          link.closest('#ekstension-entry-popover')) {
+        link.closest('.ekstension-preview-btn') ||
+        link.closest('.ekstension-single-summary-box') ||
+        link.closest('#ekstension-entry-popover')) {
         return;
       }
 
@@ -662,9 +662,14 @@ async function activateKnowledgeFilter() {
   }
   await knowledgeFilterCache.load();
 
-  if (knowledgeFilterCache.isValid() && knowledgeFilterCache.hasFlagData('isInformative')) {
-    // Cache'ten anında filtrele
+  const totalPagesInDom = Fetcher.extractTotalPages(document);
+  const cachedPages = knowledgeFilterCache.data?.meta?.pagesAnalyzed || 0;
+  const hasInformative = knowledgeFilterCache.isValid() && knowledgeFilterCache.hasFlagData('isInformative');
+
+  // Eğer cache geçerli ve tüm sayfalar analiz edilmişse anında filtrele
+  if (hasInformative && (cachedPages >= totalPagesInDom || totalPagesInDom <= 1)) {
     state.knowledgeFilterActive = true;
+    try { sessionStorage.setItem('ekstension_knowledge_filter_active_' + slug, 'true'); } catch (e) { }
     applyKnowledgeFilterToDOM();
     updateKnowledgeFilterButton();
     return;
@@ -679,6 +684,7 @@ async function activateKnowledgeFilter() {
   try {
     const { entries: allEntries, totalPages } = await Fetcher.fetchAllEntries({
       mode: 'full',
+      enableSampling: false,
       progressLabel: '🧠 Bilgi Filtresi',
       onProgress: ({ progress, message }) => {
         showFloatingProgressPill({
@@ -734,6 +740,7 @@ async function activateKnowledgeFilter() {
     // 7. DOM'a uygula
     removeFloatingProgressPill();
     state.knowledgeFilterActive = true;
+    try { sessionStorage.setItem('ekstension_knowledge_filter_active_' + slug, 'true'); } catch (e) { }
     applyKnowledgeFilterToDOM();
     updateKnowledgeFilterButton();
 
@@ -761,6 +768,12 @@ async function activateKnowledgeFilter() {
 
 function deactivateKnowledgeFilter() {
   state.knowledgeFilterActive = false;
+  const Fetcher = window.EkstensionEntryFetcher;
+  if (Fetcher) {
+    const slug = Fetcher.getTopicSlug();
+    try { sessionStorage.removeItem('ekstension_knowledge_filter_active_' + slug); } catch (e) { }
+  }
+
   const entries = document.querySelectorAll('#entry-item-list > li');
   entries.forEach(entry => {
     entry.classList.remove('ekstension-hide-non-knowledge');
@@ -778,7 +791,7 @@ function applyKnowledgeFilterToDOM() {
   let totalCount = 0;
 
   entries.forEach(entry => {
-    const id = entry.getAttribute('data-id') || '';
+    const id = entry.getAttribute('data-id') || entry.id?.replace('entry-item-', '') || '';
     if (!id) return;
     totalCount++;
 
@@ -807,23 +820,21 @@ function updateKnowledgeFilterCounts(shown, total) {
   const btn = document.getElementById('ekstension-knowledge-filter-btn');
   if (!btn) return;
 
-  if (shown === undefined || total === undefined) {
-    const entries = document.querySelectorAll('#entry-item-list > li');
-    total = 0;
-    shown = 0;
-    entries.forEach(entry => {
-      const id = entry.getAttribute('data-id') || '';
-      if (!id) return;
-      total++;
-      if (knowledgeFilterCache && knowledgeFilterCache.getEntryFlag(id, 'isInformative') === true) {
-        shown++;
-      }
-    });
+  let topicInfoCount = 0;
+  let topicTotalCount = 0;
+
+  if (knowledgeFilterCache && knowledgeFilterCache.data?.entries) {
+    topicInfoCount = knowledgeFilterCache.getEntryIdsByFlag('isInformative', true).length;
+    topicTotalCount = Object.keys(knowledgeFilterCache.data.entries).length;
   }
 
   const badge = btn.querySelector('.badge-count');
   if (badge) {
-    badge.textContent = `${shown}/${total}`;
+    if (topicTotalCount > 0) {
+      badge.textContent = `${topicInfoCount}/${topicTotalCount}`;
+    } else if (shown !== undefined && total !== undefined) {
+      badge.textContent = `${shown}/${total}`;
+    }
   }
 }
 
@@ -836,7 +847,7 @@ function updateKnowledgeFilterButton() {
   if (state.knowledgeFilterActive) {
     btn.classList.add('active');
     btn.innerHTML = '🧠 Bilgi Filtresi Aktif ✓ <span class="badge-count">0/0</span>';
-    applyKnowledgeFilterToDOM();
+    updateKnowledgeFilterCounts();
   } else {
     btn.classList.remove('active');
     btn.innerHTML = '🧠 Sadece Bilgi';
@@ -889,7 +900,7 @@ function updateMediaFilterCounts() {
   }
 
   if (knowledgeFilterCache) {
-    knowledgeFilterCache.save().catch(() => {});
+    knowledgeFilterCache.save().catch(() => { });
   }
 }
 
@@ -1378,39 +1389,117 @@ function formatSummaryMarkdown(mdText) {
   // Bold
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
-  // Headers: ### or ## or emoji headers
-  html = html.replace(/^###\s+(.*$)/gim, '<div class="ekst-summary-section-title">$1</div>');
-  html = html.replace(/^##\s+(.*$)/gim, '<div class="ekst-summary-section-title">$1</div>');
-  html = html.replace(/^(📌|⚖️|💡)\s*(.*$)/gim, '<div class="ekst-summary-section-title">$1 $2</div>');
+  // Normalize legacy headers if model outputs uppercase plain headers
+  html = html.replace(/^BAŞLIK ÖZETİ:\s*/gim, '### 📌 Başlık Özeti\n');
+  html = html.replace(/^GENEL HAVA:\s*/gim, '### 🎭 Genel Hava\n');
+  html = html.replace(/^ÖNE ÇIKANLAR:\s*/gim, '### 🧭 Tartışma Kırılımları & Kümeler\n');
+  html = html.replace(/^TARTIŞMA KIRILIMLARI.*?:\s*/gim, '### 🧭 Tartışma Kırılımları & Kümeler\n');
+  html = html.replace(/^DİKKAT ÇEKEN:\s*/gim, '### 💡 Dikkat Çeken / Nüans\n');
 
-  // Bullets
+  // Headers without ### (e.g. 📌 Başlık Özeti)
+  html = html.replace(/^(📌|⚖️|💡|🎭|🧭)\s*(.*$)/gim, '### $1 $2');
+
   const lines = html.split('\n');
+  const processed = [];
   let inList = false;
-  const processedLines = [];
+  let inNuanceCallout = false;
+  let inClusterCard = false;
+  let currentSection = '';
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const trimmed = line.trim();
-    if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('• ')) {
-      if (!inList) {
-        processedLines.push('<ul>');
-        inList = true;
-      }
-      processedLines.push(`<li>${trimmed.replace(/^[-*•]\s+/, '')}</li>`);
-    } else {
+
+    if (!trimmed) {
       if (inList) {
-        processedLines.push('</ul>');
+        processed.push('</ul>');
         inList = false;
       }
-      if (trimmed.length > 0) {
-        processedLines.push(`<p>${trimmed}</p>`);
+      continue;
+    }
+
+    // Section headers: ### or ##
+    const headerMatch = trimmed.match(/^#{2,3}\s+(.*$)/);
+    if (headerMatch) {
+      if (inList) {
+        processed.push('</ul>');
+        inList = false;
+      }
+      if (inClusterCard) {
+        processed.push('</div>');
+        inClusterCard = false;
+      }
+      if (inNuanceCallout) {
+        processed.push('</div>');
+        inNuanceCallout = false;
+      }
+
+      const titleText = headerMatch[1].trim();
+      currentSection = titleText;
+
+      if (titleText.includes('💡') || titleText.toLowerCase().includes('dikkat çeken') || titleText.toLowerCase().includes('nüans')) {
+        inNuanceCallout = true;
+        processed.push(`<div class="ekst-nuance-callout"><div class="ekst-nuance-title">${titleText}</div>`);
+      } else {
+        processed.push(`<div class="ekst-summary-section-title">${titleText}</div>`);
+      }
+      continue;
+    }
+
+    // Genel Hava: Hashtag badges
+    if (currentSection.includes('🎭') || currentSection.toLowerCase().includes('genel hava')) {
+      if (trimmed.includes('#')) {
+        const badgesHtml = trimmed.replace(/#([\p{L}\p{N}_-]+)/gu, '<span class="ekst-mood-badge">#$1</span>');
+        processed.push(`<div class="ekst-mood-badges-container">${badgesHtml}</div>`);
+        continue;
       }
     }
-  }
-  if (inList) {
-    processedLines.push('</ul>');
+
+    // Cluster cards: [Dönem / Kategori]: or <strong>[...]:</strong>
+    const clusterMatch = trimmed.match(/^[-*•]?\s*<strong>\[(.*?)\]:?<\/strong>:?/i) ||
+                         trimmed.match(/^[-*•]?\s*\[(.*?)\]:?/i);
+    if (clusterMatch && (currentSection.includes('🧭') || currentSection.includes('Tartışma') || currentSection.includes('Küme') || currentSection.includes('Öne Çıkan'))) {
+      if (inList) {
+        processed.push('</ul>');
+        inList = false;
+      }
+      if (inClusterCard) {
+        processed.push('</div>');
+      }
+      inClusterCard = true;
+      const clusterTitle = clusterMatch[1].trim();
+      processed.push(`<div class="ekst-cluster-card"><div class="ekst-cluster-title">🔹 ${clusterTitle}</div>`);
+      continue;
+    }
+
+    // List bullets
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('• ')) {
+      if (!inList) {
+        processed.push('<ul>');
+        inList = true;
+      }
+      const itemContent = trimmed.replace(/^[-*•]\s+/, '');
+      processed.push(`<li>${itemContent}</li>`);
+    } else {
+      if (inList) {
+        processed.push('</ul>');
+        inList = false;
+      }
+      processed.push(`<p>${trimmed}</p>`);
+    }
   }
 
-  return processedLines.join('');
+  if (inList) {
+    processed.push('</ul>');
+  }
+  if (inClusterCard) {
+    processed.push('</div>');
+  }
+  if (inNuanceCallout) {
+    processed.push('</div>');
+  }
+
+  return processed.join('');
 }
 
 function injectAISummarizeButton() {
@@ -1599,20 +1688,23 @@ async function callGeminiFlashAPI(promptText, systemInstruction = '') {
 async function classifyEntriesViaGemini(entries, topicTitle) {
   if (!entries || entries.length === 0) return new Set();
 
-  // Entry'leri formatlayıp prompt'a ekle
-  const formattedEntries = entries.map(e => {
-    const cleanContent = e.content
-      .replace(/<br\s*[\/]?>/gi, '\n')
-      .replace(/<[^>]+>/g, '')
-      .trim();
-    // Her entry'yi en fazla 800 karakterle sınırla (token tasarrufu)
-    const truncated = cleanContent.length > 800
-      ? cleanContent.substring(0, 800) + '...'
-      : cleanContent;
-    return `[ID: ${e.id} | @${e.author || 'anonim'}]:\n${truncated}`;
-  });
+  const BATCH_SIZE = 30;
+  const informativeIds = new Set();
 
-  const prompt = `Başlık: "${topicTitle}"
+  for (let i = 0; i < entries.length; i += BATCH_SIZE) {
+    const batch = entries.slice(i, i + BATCH_SIZE);
+    const formattedEntries = batch.map(e => {
+      const cleanContent = e.content
+        .replace(/<br\s*[\/]?>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .trim();
+      const truncated = cleanContent.length > 750
+        ? cleanContent.substring(0, 750) + '...'
+        : cleanContent;
+      return `[ID: ${e.id} | @${e.author || 'anonim'}]:\n${truncated}`;
+    });
+
+    const prompt = `Başlık: "${topicTitle}" (${i + 1}-${Math.min(i + BATCH_SIZE, entries.length)} / ${entries.length} entry)
 
 Aşağıdaki Ekşi Sözlük entry'lerini oku. Her entry'nin başlıkla alakalı, gerçekten bilgi veya değer içerip içermediğini belirle.
 
@@ -1638,22 +1730,23 @@ Hiçbir entry bilgi içermiyorsa "YOK" yaz.
 Başka hiçbir açıklama ekleme.
 Örnek: 17302831,17302900,17303012`;
 
-  const sysPrompt = 'Sen Ekşi Sözlük entry\'lerini tarafsız olarak sınıflandıran bir yapay zeka asistanısın. Sadece istenen formatta (virgülle ayrılmış ID listesi) yanıt ver. Başka hiçbir açıklama, giriş cümlesi veya yorum ekleme.';
+    const sysPrompt = 'Sen Ekşi Sözlük entry\'lerini tarafsız olarak sınıflandıran bir yapay zeka asistanısın. Sadece istenen formatta (virgülle ayrılmış ID listesi) yanıt ver. Başka hiçbir açıklama, giriş cümlesi veya yorum ekleme.';
 
-  const resultText = await callGeminiFlashAPI(prompt, sysPrompt);
-
-  // "YOK" kontrolü
-  if (resultText.trim().toUpperCase() === 'YOK') {
-    return new Set();
+    try {
+      const resultText = await callGeminiFlashAPI(prompt, sysPrompt);
+      if (resultText && resultText.trim().toUpperCase() !== 'YOK') {
+        const ids = resultText
+          .split(/[,\s]+/)
+          .map(s => s.trim())
+          .filter(s => /^\d+$/.test(s));
+        ids.forEach(id => informativeIds.add(id));
+      }
+    } catch (batchErr) {
+      console.warn('[ek$tension] Batch classification error:', batchErr);
+    }
   }
 
-  // ID'leri parse et
-  const ids = resultText
-    .split(/[,\s]+/)
-    .map(s => s.trim())
-    .filter(s => /^\d+$/.test(s));
-
-  return new Set(ids);
+  return informativeIds;
 }
 
 function renderAPIKeySetupCard(onSavedCallback) {
@@ -1796,11 +1889,14 @@ async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
     // 3. Extract & Crawl entries via EntryFetcher
     let allEntries = [];
     let totalPages = 1;
+    let sampledPages = null;
+    let isSampled = false;
 
     if (window.EkstensionEntryFetcher) {
       const fetchResult = await window.EkstensionEntryFetcher.fetchAllEntries({
         mode: effectiveMode,
         progressLabel: modeLabel,
+        enableSampling: effectiveMode !== 'popular',
         onProgress: ({ progress, message }) => {
           showFloatingProgressPill({
             topicSlug: slug,
@@ -1814,6 +1910,8 @@ async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
       });
       allEntries = fetchResult.entries;
       totalPages = fetchResult.totalPages;
+      sampledPages = fetchResult.sampledPages;
+      isSampled = fetchResult.isSampled;
     } else {
       allEntries = extractEntriesFromCurrentPage();
       totalPages = extractTotalPagesFromCurrentPage();
@@ -1841,25 +1939,61 @@ async function handleAISummarizeClick(mode = 'auto', forceRefresh = false) {
       return `[Entry #${idx + 1} | Yazar: @${e.author || 'yazar'} | ${e.date || ''}]:\n${cleanContent}`;
     });
 
-    const prompt = `Başlık: "${title}"
-İncelenen Entry Sayısı: ${formattedEntries.length}
+    const metaLines = [`Başlık: "${title}"`, `İncelenen Entry Sayısı: ${formattedEntries.length}`];
+    if (totalPages > 1) {
+      if (isSampled && sampledPages && sampledPages.length > 0) {
+        metaLines.push(`Toplam Sayfa Sayısı: ${totalPages} (Dönemsel Temsil / Akıllı Örneklem: Sayfa ${sampledPages.join(', ')})`);
+      } else {
+        metaLines.push(`Toplam Sayfa Sayısı: ${totalPages}`);
+      }
+    }
 
-Aşağıdaki Ekşi Sözlük başlığı altındaki entry'leri oku. Uzatmadan, lafı dolandırmadan son derece net ve öz bir özet çıkar.
+    const prompt = `${metaLines.join('\n')}
 
-ENTRY'LER:
+ENTRY'LER (Tarih ve yazarlarıyla birlikte):
 ${formattedEntries.join('\n\n---\n\n')}
 
-Lütfen tam olarak şu kısa ve net formatta yaz:
-📌 **Konu Nedir?**
-(Olayı veya konunun ne olduğunu 1-2 net cümleyle açıkla)
+Sen Ekşi Sözlük başlıklarını analiz eden kıdemli, tarafsız ve keskin bir asistansın.
+Sana bir Ekşi Sözlük başlığının adı ve o başlıktaki entry'ler verildi.
 
-⚖️ **Öne Çıkan Görüşler**
-• **Savunanlar / Destekleyenler:** (Ana argümanı 1 kısa cümle)
-• **Eleştirenler / Karşı Çıkanlar:** (Ana eleştiriyi 1 kısa cümle)
-• **Farklı / İlginç Bakış:** (Varsa dikkat çeken farklı bir yaklaşım - 1 kısa cümle)
+GÖREVİN:
+Entry'leri tek tek özetlemek veya "şu şöyle dedi" diye saymak değil; başlığın özünü, tartışma dinamiklerini ve varsa yıllar/dönemler içindeki evrimini (kümeleme / cluster) en net, taranabilir ve vurucu formatta sunmaktır.
 
-💡 **Genel Sonuç / Ortak Kanı**
-(Sözlük yazarlarının ağırlıklı eğilimini 1 kısa cümleyle belirt)`;
+UYULMASI ZORUNLU KURALLAR:
+1. İRONİ, SARKAZM VE TROLLÜK AYRIMI: Ekşi Sözlük'e özgü mizah, taşlama, kinaye ve trolleri gerçek görüşlerden titizlikle ayır. Küfürleri ve kaba ifadeleri temizle.
+2. POPÜLERLİK ≠ DOĞRULUK: Entry sayısı fazla olan görüşü otomatik olarak nesnel doğru kabul etme. "Sözlük çoğunluğunun eğilimi" veya "yaygın kanaat" olarak yansıt.
+3. KİŞİSEL DENEYİMLERİ AYRIŞTIR: "Ben yaşadım", "bende şöyle oldu" gibi kişisel anekdotları genel gerçek gibi sunma; "bazı yazarların deneyimlerine göre" şeklinde konumlandır.
+4. KÜMELEME (CLUSTER) STRATEJİSİ:
+   * Eğer başlık yıllara yayılmışsa (veya farklı sayfalar/dönemler içeriyorsa), tartışmanın evrimini 2-4 mantıksal DÖNEME (örn. [2010-2017: İlk Dönem & Popülerlik], [2018-2022: Kriz & Eleştiriler], [2023-Günümüz: Son Durum]) ayır.
+   * Eğer başlık tekil bir olayı veya ürünü anlatıyorsa, TEMATİK BOYUTLARA (örn. [Performans & Nitelik], [Fiyat & Değer Tartışması], [Kullanıcı Deneyimi]) ayır.
+   * Eğer başlık kısa ve tek boyutluysa doğrudan ana görüş kutuplarına göre özetle.
+5. TEKRARLARI BİRLEŞTİR: Aynı argümanı savunan onlarca entry'yi tek bir güçlü madde altında topla. "X şöyle demiş, Y böyle demiş" deme.
+6. SOMUT BİLGİLERİ KORU: İsim, tarih, fiyat, model, yasa, istatistik gibi kritik veriler varsa koru. Doğrulanmamış spekülasyonları "iddia ediliyor" olarak belirt.
+7. UYDURMA: Entry'lerde olmayan hiçbir bilgi veya şahsi yorum ekleme. Çelişkili görüşler varsa çelişkiyi koru.
+
+ÇIKTI FORMATI (Aşağıdaki Markdown başlıklarını ve etiket formatını harfiyen uygula):
+
+### 📌 Başlık Özeti
+(Başlığın temel konusunu ve genel tartışmayı anlatan 2-3 net cümle. Anahtar kavramları **kalın** yap.)
+
+### 🎭 Genel Hava
+#etiket1 #etiket2 #etiket3 (Örn: #tartışmalı #mizahi #bilgilendirici #kutuplaşmış #deneyim-ağırlıklı #sitemkâr)
+
+### 🧭 Tartışma Kırılımları & Kümeler
+* **[Dönem veya Tema Adı - örn: 2012-2018: İlk Çıkış & Beğeni / veya Teknik Boyut]:**
+  - **Hâkim Görüş:** Bu kümedeki ana fikir veya çoğunluk yaklaşımı.
+  - **Eleştiri / Karşıt Bakış:** Varsa öne çıkan itirazlar veya farklı deneyimler.
+
+* **[Dönem veya Tema Adı - örn: 2019-Günümüz: Kırılma ve Son Durum / veya Fiyat-Değer Dengesi]:**
+  - **Hâkim Görüş:** Bu kümedeki ana fikir veya güncel durum.
+  - **Eleştiri / Karşıt Bakış:** Varsa öne çıkan itirazlar veya karşıt sesler.
+
+### 💡 Dikkat Çeken / Nüans
+(Başlıkta genel eğilimden ayrılan, şaşırtıcı, azınlıkta kalan veya ufuk açıcı tek bir can alıcı tespit. Yoksa bu bölümü hiç yazma.)
+
+ÖNEMLİ:
+Çıktıda entry numarası veya yazar kullanıcı adı zikretme. Doğrudan yukarıdaki markdown formatında yanıt ver.
+`;
 
     const finalSummary = await callGeminiFlashAPI(prompt);
 
@@ -1872,6 +2006,8 @@ Lütfen tam olarak şu kısa ve net formatta yaz:
       summary: finalSummary,
       totalEntries: allEntries.length,
       totalPages,
+      sampledPages,
+      isSampled,
       mode: effectiveMode,
       timestamp: Date.now()
     };
@@ -1917,14 +2053,18 @@ function renderSummaryCard(data) {
   }
 
   const metaText = data.totalEntries ? `${data.totalEntries} entry (${data.totalPages || 1} sayfa)` : '';
+  const samplingBadge = data.isSampled
+    ? `<span class="ekst-summary-badge" style="background:#0891b2;" title="Dönemsel temsili sağlayan akıllı örneklem yapıldı">Akıllı Kümeleme</span>`
+    : '';
   const modeBadge = data.mode === 'popular'
     ? `<span class="ekst-summary-badge" style="background:#ea580c">Gündem (Bugün)</span>`
-    : `<span class="ekst-summary-badge" style="background:#7c3aed">Gemini 3.5 Flash Lite</span>`;
+    : `<span class="ekst-summary-badge" style="background:#7c3aed">Gemini Flash</span>`;
 
   card.innerHTML = `
     <div class="ekst-summary-header">
       <div class="ekst-summary-header-left">
         <span class="ekst-summary-title">⚡ AI Başlık Özeti</span>
+        ${samplingBadge}
         ${modeBadge}
         ${metaText ? `<span class="ekst-summary-meta">• ${metaText}</span>` : ''}
       </div>
@@ -2251,7 +2391,18 @@ function initialize() {
   if (window.EkstensionTopicCache && window.EkstensionEntryFetcher) {
     const slug = window.EkstensionEntryFetcher.getTopicSlug();
     knowledgeFilterCache = new window.EkstensionTopicCache(slug);
-    knowledgeFilterCache.load().catch(() => {});
+    knowledgeFilterCache.load().then(() => {
+      let isSessionActive = false;
+      try {
+        isSessionActive = sessionStorage.getItem('ekstension_knowledge_filter_active_' + slug) === 'true';
+      } catch (e) { }
+
+      if (isSessionActive && knowledgeFilterCache.isValid() && knowledgeFilterCache.hasFlagData('isInformative')) {
+        state.knowledgeFilterActive = true;
+        updateKnowledgeFilterButton();
+        applyKnowledgeFilterToDOM();
+      }
+    }).catch(() => { });
   }
 
   chrome.runtime.sendMessage({ action: 'getFilteredWords' }, (words) => {
@@ -2342,8 +2493,8 @@ observer.observe(targetNode, { childList: true, subtree: true });
 // Bilgi Filtresi — Artımlı Analiz (Infinite Scroll / Canlı Akış)
 let knowledgeEntryBuffer = [];
 let knowledgeDebounceTimer = null;
-const KNOWLEDGE_BUFFER_THRESHOLD = 20;
-const KNOWLEDGE_DEBOUNCE_MS = 3000;
+const KNOWLEDGE_BUFFER_THRESHOLD = 15;
+const KNOWLEDGE_DEBOUNCE_MS = 300;
 
 async function handleNewEntriesForKnowledgeFilter() {
   if (!state.knowledgeFilterActive || !knowledgeFilterCache) return;
@@ -2353,8 +2504,8 @@ async function handleNewEntriesForKnowledgeFilter() {
 
   // Sayfadaki tüm entry ID'leri al
   const allEntryIds = Array.from(
-    document.querySelectorAll('#entry-item-list > li[data-id]')
-  ).map(li => li.getAttribute('data-id')).filter(Boolean);
+    document.querySelectorAll('#entry-item-list > li')
+  ).map(li => li.getAttribute('data-id') || li.id?.replace('entry-item-', '')).filter(Boolean);
 
   // Cache'te olmayan (henüz analiz edilmemiş) yeni ID'leri bul
   const newIds = knowledgeFilterCache.getMissingEntryIds(allEntryIds, 'isInformative');
@@ -2362,7 +2513,7 @@ async function handleNewEntriesForKnowledgeFilter() {
 
   // Yeni entry'leri geçici olarak pending yap
   newIds.forEach(id => {
-    const li = document.querySelector(`#entry-item-list > li[data-id="${id}"]`);
+    const li = document.querySelector(`#entry-item-list > li[data-id="${id}"], #entry-item-list > li#entry-item-${id}`);
     if (li) {
       li.classList.add('ekstension-knowledge-pending');
     }
@@ -2402,7 +2553,7 @@ async function flushKnowledgeBuffer() {
     entries.forEach(e => {
       knowledgeFilterCache.setEntryFlag(e.id, 'isInformative', informativeIds.has(e.id));
       // hasMedia'yı da cache'le
-      const entryLi = document.querySelector(`#entry-item-list > li[data-id="${e.id}"]`);
+      const entryLi = document.querySelector(`#entry-item-list > li[data-id="${e.id}"], #entry-item-list > li#entry-item-${e.id}`);
       if (entryLi) {
         knowledgeFilterCache.setEntryFlag(e.id, 'hasMedia', hasMediaOrLinks(entryLi));
       }
@@ -2416,7 +2567,7 @@ async function flushKnowledgeBuffer() {
     console.warn('[ek$tension] Incremental knowledge analysis error:', err);
     // Hata durumunda pending entry'leri göster (gizleme)
     idsToAnalyze.forEach(id => {
-      const li = document.querySelector(`#entry-item-list > li[data-id="${id}"]`);
+      const li = document.querySelector(`#entry-item-list > li[data-id="${id}"], #entry-item-list > li#entry-item-${id}`);
       if (li) {
         li.classList.remove('ekstension-knowledge-pending');
       }
@@ -2426,9 +2577,19 @@ async function flushKnowledgeBuffer() {
 
 // Power Tools (Sonsuz Kaydırma & Canlı Akış) tarafından yeni entry eklendiğinde araçları çalıştır
 window.addEventListener('ekstension:entries-added', () => {
+  // 1. Bilgi Filtresi ve Medya Filtresini anında yeni entry'lere uygula (gecikmesiz)
+  if (state.knowledgeFilterActive) {
+    applyKnowledgeFilterToDOM();
+  }
+  if (state.mediaOnlyActive) {
+    applyMediaOnlyFilter();
+  }
+  applyAuthorBlocking();
+
+  // 2. Kalan sayfa içi butonları ve araçları çalıştır
   if (observerTimeout) clearTimeout(observerTimeout);
   observerTimeout = setTimeout(() => {
     runAllEnhancements();
     handleNewEntriesForKnowledgeFilter();
-  }, 100);
+  }, 60);
 });
