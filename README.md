@@ -5,6 +5,9 @@
 ### <i>Ekşi Sözlük için Yeni Nesil Güç Araçları & Google Gemini AI Destekli Chrome Eklentisi</i>
 
 <p align="center">
+  <a href="https://chromewebstore.google.com/detail/pcmiembjpbjejfhcdfmhnhmdnigoabja" target="_blank">
+    <img src="https://img.shields.io/badge/Chrome_Web_Store-ek$tension-4285F4.svg?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Chrome Web Store" />
+  </a>
   <a href="https://github.com/emreuluduz/ekstension/releases">
     <img src="https://img.shields.io/badge/version-1.1.0-3b82f6.svg?style=for-the-badge&logo=semver&logoColor=white" alt="Version 1.1.0" />
   </a>
@@ -29,13 +32,15 @@
 </p>
 
 <p align="center">
+  <a href="https://chromewebstore.google.com/detail/pcmiembjpbjejfhcdfmhnhmdnigoabja" target="_blank">🛒 <b>Chrome Web Store'dan Yükle</b></a> •
   <a href="#-özellikler--features">Özellikler</a> •
   <a href="#%EF%B8%8F-ekran-görüntüleri--preview">Önizleme</a> •
-  <a href="#%EF%B8%8F-teknoloji-yığını--tech-stack">Teknoloji</a> •
-  <a href="#-proje-mimarisi--project-structure">Proje Yapısı</a> •
+  <a href="#-proje-mimarisi--project-structure">Mimari</a> •
   <a href="#-kurulum--installation">Kurulum</a> •
+  <a href="#-desteklenen-alan-adları--supported-mirrors">Aynalar</a> •
   <a href="#%EF%B8%8F-klavye-kısayolları--shortcuts">Kısayollar</a> •
-  <a href="#-katkıda-bulunma--contributing">Katkıda Bulunma</a> •
+  <a href="#-güvenlik--gizlilik--security--privacy">Güvenlik</a> •
+  <a href="#-sıkça-sorulan-sorular--faq">SSS</a> •
   <a href="#-lisans--license">Lisans</a>
 </p>
 
@@ -54,7 +59,7 @@
 
 - [📌 Genel Bakış / Overview](#-genel-bakış--overview)
 - [🚀 Özellikler / Features](#-özellikler--features)
-  - [⚡ Google Gemini AI Özetleyici](#-google-gemini-ai-özetleyici-gemini-35-flash-lite)
+  - [⚡ Google Gemini AI Gücü & Bilgi Filtresi](#-google-gemini-ai-gücü--bilgi-filtresi-gemini-35-flash-lite)
   - [🧰 In-Page Power Tools (Sayfa İçi Araçlar)](#-in-page-power-tools-sayfa-içi-araçlar)
   - [🔍 Gelişmiş Arama & Çoklu Platform Entegrasyonu](#-gelişmiş-arama--çoklu-platform-entegrasyonu)
   - [⚙️ Yedekleme, Tema & Kişiselleştirme](#️-yedekleme-tema--kişiselleştirme)
@@ -62,7 +67,11 @@
 - [🛠️ Teknoloji Yığını / Tech Stack](#%EF%B8%8F-teknoloji-yığını--tech-stack)
 - [📂 Proje Mimarisi / Project Structure](#-proje-mimarisi--project-structure)
 - [📦 Kurulum / Installation](#-kurulum--installation)
+  - [🔑 Gemini API Anahtarı Kurulumu](#-gemini-api-anahtarı-nasıl-alınır)
+- [🌐 Desteklenen Alan Adları / Supported Mirrors](#-desteklenen-alan-adları--supported-mirrors)
 - [⌨️ Klavye Kısayolları / Shortcuts](#%EF%B8%8F-klavye-kısayolları--shortcuts)
+- [🔒 Güvenlik & Gizlilik / Security & Privacy](#-güvenlik--gizlilik--security--privacy)
+- [❓ Sıkça Sorulan Sorular / FAQ](#-sıkça-sorulan-sorular--faq)
 - [🤝 Katkıda Bulunma / Contributing](#-katkıda-bulunma--contributing)
 - [📄 Lisans / License](#-lisans--license)
 
@@ -70,11 +79,13 @@
 
 ## 🚀 Özellikler / Features
 
-### ⚡ Google Gemini AI Özetleyici (Gemini 3.5 Flash Lite)
+### ⚡ Google Gemini AI Gücü & Bilgi Filtresi (Gemini 3.5 Flash Lite)
 - **Başlık & Tartışma Özetleyici (`⚡ Başlığı Özetle`):** Onlarca sayfadan oluşan uzun tartışma başlıklarındaki tüm entry'leri tarar. Google'ın resmi **Gemini 3.5 Flash Lite** modeli ile tartışmanın ana fikrini, farklı perspektifleri ve öne çıkan ortak kanıları saniyeler içinde madde madde özetler.
 - **Tekil Entry Özetleyici (`⚡ Özetle`):** 500 karakterden uzun kapsamlı entry'lerin altında beliren buton ile anında 1-2 maddelik hap özet üretir.
+- **🧠 Bilgi Odaklı Akıllı Filtreleme (AI Knowledge Filter):** Başlıklardaki geyik, trol, linç veya konu dışı entry'leri yapay zeka ile eleyerek yalnızca somut bilgi, kaynak, veri ve mantıksal argüman içeren entry'leri anında filtreler (`⚡ Sadece Bilgi İçerenler`).
+- **📊 Konu Kümeleme Özeti (Topic Cluster Summary):** Çok sayfalı başlıklardaki entry'leri kronolojik ve tematik kümelere ayırarak tartışmanın zaman içindeki gelişimini ve farklı görüş kamplarını ayrı gruplar halinde özetler.
 - **Bulut Hızı & Sıfır Donanım Yükü:** Tüm işlemler Google'ın güvenli altyapısında çalışır; bilgisayarınızı yormaz, 1.5 - 2 saniyede sonuç verir.
-- **%100 Ücretsiz API Desteği:** Google AI Studio üzerinden alınan ücretsiz API anahtarı ile kolayca çalışır ([Kurulum Rehberi](docs/GEMINI_API_KEY_SETUP.md)).
+- **%100 Ücretsiz API Desteği:** Google AI Studio üzerinden alınan ücretsiz API anahtarı ile kolayca çalışır ([Kurulum Adımları](#-gemini-api-anahtarı-nasıl-alınır)).
 
 ---
 
@@ -84,7 +95,7 @@
 - **🧘 Zen / Odaklanma Modu (Reader Mode):** Reklamları, sol menüyü ve dikkat dağıtıcı öğeleri gizleyen; ayarlanabilir ferah genişlik ve tipografiye sahip temiz okuma modu (`🧘 Zen Modu` / `Z`).
 - **👁️ Entry Bkz Hover Preview:** `(bkz: #173073218)` veya doğrudan entry bağlantılarının üzerine gelindiğinde sayfadan ayrılmadan entry metnini, yazarını ve tarihini gösteren akıllı önizleme kartı.
 - **🎬 Medya & Link Filtresi:** Başlık sayfalarında tek tıkla (`[ 🎬 Sadece Medya & Linkler ]`) metin ağırlıklı entry'leri gizleyip sadece görsel, video veya harici link içeren entry'leri listeleme.
-- **🖼️ Satır İçi Medya Önizleme:** YouTube videolarını, görsel bağlantılarını (`soz.lk`, `eksisozluk.com/img/`, `.jpg`, `.png`, `hizliresim`, `imgur`, `ibb.co`, `resmim.net`) sayfadan ayrılmadan doğrudan entry içinde görüntüleme ve oynatma.
+- **🖼️ Satır İçi Medya Önizleme & Zoom:** YouTube videolarını ve görsel bağlantılarını (`soz.lk`, `eksisozluk.com/img/`, `.jpg`, `.png`, `hizliresim`, `imgur`, `ibb.co`, `resmim.net`) sayfadan ayrılmadan doğrudan entry içinde görüntüleme, oynatma, doğal çözünürlükte büyütüp küçültme (Zoom toggle) ve gizleme kontrolleri.
 - **🚫 1-Tıkla Yazar / Troll Engelleme:** İstenmeyen yazarları tek tıkla (`🚫`) engelleme ve gizleme.
 
 ---
@@ -154,15 +165,32 @@ ekstension/
 │   ├── 📁 background/            # Background Service Worker & yaşam döngüsü
 │   │   ├── 📄 background.js      # Olay dinleyicileri & bağlam menüleri
 │   │   └── 📄 topics.js          # Gündem ve veri ayrıştırıcılar
-│   └── 📁 content/               # Web sayfası içi scriptler (DOM Enjeksiyonu)
-│       ├── 📄 content.css        # Sayfa içi stiller
-│       ├── 📄 filter.js          # Yazar & kelime engelleyicisi
-│       └── 📁 power-tools/       # Modüler güç araçları
-│           ├── 📄 bookmarks.js       # Entry kaydetme & dışa aktarma
-│           ├── 📄 infinite-scroll.js # Sonsuz kaydırma & Canlı akış
-│           ├── 📄 keyboard-nav.js    # Klavye kısayol yöneticisi
-│           ├── 📄 zen-mode.js        # Zen / Odaklanma okuma modu
-│           └── 📄 power-tools.css    # Güç araçları stil tanımları
+│   ├── 📁 content/               # Web sayfası içi scriptler (DOM Enjeksiyonu)
+│   │   ├── 📄 content.css        # Sayfa içi stiller
+│   │   ├── 📄 content.js         # Dış platform entegrasyonları (YouTube, IMDb vb.)
+│   │   ├── 📄 filter.js          # Yazar, kelime ve AI bilgi filtresi
+│   │   └── 📁 power-tools/       # Modüler güç araçları
+│   │       ├── 📄 bookmarks.js       # Entry kaydetme & dışa aktarma
+│   │       ├── 📄 infinite-scroll.js # Sonsuz kaydırma & Canlı akış
+│   │       ├── 📄 keyboard-nav.js    # Klavye kısayol yöneticisi
+│   │       ├── 📄 zen-mode.js        # Zen / Odaklanma okuma modu
+│   │       └── 📄 power-tools.css    # Güç araçları stil tanımları
+│   ├── 📁 offscreen/             # Manifest V3 arka plan DOM ayrıştırıcısı
+│   │   ├── 📄 offscreen.html     # Offscreen doküman container'ı
+│   │   └── 📄 offscreen.js       # Güvenli HTML ayrıştırma (parsing)
+│   ├── 📁 services/              # AI ve Veri Servis Katmanı
+│   │   ├── 📁 ai/                # Gemini API entegrasyonu & AI servis yöneticisi
+│   │   │   ├── 📄 AIService.js           # Çoklu sağlayıcı ve görev orkestrasyonu
+│   │   │   ├── 📄 BaseAIProvider.js      # Temel AI sınıfı arayüzü
+│   │   │   └── 📁 providers/
+│   │   │       └── 📄 GeminiAPIProvider.js # Google Gemini REST API çağrıları
+│   │   ├── 📁 cache/             # Veri önbellekleme
+│   │   │   └── 📄 TopicCache.js          # Başlık özet ve sınıflandırma önbelleği
+│   │   └── 📄 EntryFetcher.js    # Çok sayfalı başlık tarayıcısı (Crawling)
+│   └── 📁 utils/                 # Ortak yardımcı araçlar
+│       ├── 📄 constants.js       # Eklenti sabitleri
+│       ├── 📄 debounce.js        # Performans geciktirme fonksiyonları
+│       └── 📄 helpers.js         # Genel yardımcı fonksiyonlar
 ├── 📄 manifest.json              # Extension Manifest V3 yapılandırması
 ├── 📄 rules.json                 # DeclarativeNetRequest ağ kuralları
 ├── 📄 PRIVACY_POLICY.md          # Gizlilik Politikası
@@ -173,20 +201,65 @@ ekstension/
 
 ## 📦 Kurulum / Installation
 
-### 1. Depoyu Klonlayın veya İndirin
+### 🚀 Chrome Web Store (Önerilen & Kolay Kurulum)
+
+Eklentiyi doğrudan Google Chrome Web Mağazası üzerinden tek tıkla yükleyebilirsiniz:
+
+<p align="left">
+  <a href="https://chromewebstore.google.com/detail/pcmiembjpbjejfhcdfmhnhmdnigoabja" target="_blank">
+    <img src="https://img.shields.io/badge/Chrome_Web_Store-Hemen_Yükle-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Chrome Web Store'dan Yükle" />
+  </a>
+</p>
+
+> [!TIP]
+> Chrome Web Store sürümü otomatik güncelleme alır. **Brave**, **Edge**, **Opera**, **Vivaldi** ve **Arc** gibi tüm Chromium tabanlı tarayıcılarda da doğrudan mağaza üzerinden sorunsuzca çalışır.
+
+---
+
+### 🔑 Gemini API Anahtarı Nasıl Alınır?
+
+Gemini AI özetleme ve bilgi odaklı akıllı filtreleme özelliklerini kullanabilmek için Google AI Studio üzerinden tamamen ücretsiz bir API anahtarı almanız gerekir:
+
+1. [Google AI Studio](https://aistudio.google.com/)'ya gidin ve Google hesabınızla giriş yapın.
+2. Sol menüdeki **"Get API key"** butonuna tıklayın.
+3. **"Create API key"** butonuna basarak yeni bir anahtar oluşturun ve kopyalayın.
+4. Eklenti simgesine tıklayıp **Ayarlar** (`⚙️`) sekmesine gidin.
+5. Kopyaladığınız anahtarı **Gemini API Key** alanına yapıştırıp **Kaydet** butonuna basın.
+
+> [!NOTE]
+> Google AI Studio API anahtarı bireysel kotalar dahilinde **%100 ücretsizdir** ve herhangi bir kredi kartı bilgisi gerektirmez.
+
+---
+
+### 🛠️ Geliştirici / Manuel Kurulum (GitHub)
+
+Eklentiyi yerel olarak çalıştırmak veya geliştirmeye katkı sağlamak için:
+
+#### 1. Depoyu Klonlayın veya İndirin
 ```bash
 git clone https://github.com/emreuluduz/ekstension.git
 ```
 *(veya GitHub üzerinden **ZIP** olarak indirip klasöre çıkartın)*
 
-### 2. Tarayıcıya Yükleyin (Chrome / Brave / Edge / Arc)
+#### 2. Tarayıcıya Yükleyin
 1. Tarayıcınızın adres çubuğuna `chrome://extensions/` yazın ve Enter'a basın.
 2. Sağ üst köşedeki **Geliştirici modu (Developer mode)** anahtarını açın.
 3. Sol üstteki **Paketlenmemiş öge yükle (Load unpacked)** butonuna tıklayın.
 4. İndirdiğiniz `ekstension` klasörünü seçin.
 
-> [!TIP]
-> Gemini AI özelliklerini kullanabilmek için [Google AI Studio](https://aistudio.google.com/)'dan ücretsiz alacağınız API anahtarını eklenti Ayarlar bölümünden eklemeniz yeterlidir.
+---
+
+## 🌐 Desteklenen Alan Adları / Supported Mirrors
+
+Ekşi Sözlük'ün erişim engelleri nedeniyle kullandığı güncel alan adları ve aynalarda ek$tension otomatik olarak devreye girer:
+
+- `eksisozluk.com`
+- `eksisozluk1923.com`
+- `eksisozluk2023.com`
+- `eksisozluk111.com`
+- `soz.lk`
+
+*(Sözlük alan adı güncellemelerinde eklenti kuralları kesintisiz çalışacak şekilde güncellenmektedir).*
 
 ---
 
@@ -202,6 +275,41 @@ Ekşi Sözlük sayfalarında gezinirken fareye dokunmadan hızlı hareket edin:
 | <kbd>E</kbd> | Odaklanılan entry'yi **Gemini AI ile özetle** |
 | <kbd>Z</kbd> | **Zen / Okuma Modu**'nu aç / kapat |
 | <kbd>?</kbd> | Klavye kısayolları yardım penceresini göster |
+
+---
+
+## 🔒 Güvenlik & Gizlilik / Security & Privacy
+
+Kullanıcı gizliliği ve veri güvenliği ek$tension mimarisinin temelini oluşturur:
+
+- **Tamamen Yerel Depolama (Local Storage):** Gemini API anahtarınız, favori başlıklarınız ve engel listeleriniz yalnızca tarayıcınızın yerel depolama alanında (`chrome.storage.local`) şifrelenmiş olarak tutulur.
+- **Sıfır Ara Sunucu / Doğrudan Bağlantı:** Yapay zeka istekleri doğrudan istemci tarayıcınızdan Google Gemini API'sine şifreli HTTPS üzerinden aktarılır. Hiçbir ara sunucu veya üçüncü taraf backend bulunmaz.
+- **Veri Toplanmaz & Satılmaz:** Eklenti kullanıcı davranışlarını izlemez, analitik telemetrisi toplamaz ve sözlük oturum bilgilerinize asla erişmez.
+- Detaylı bilgi için [`PRIVACY_POLICY.md`](PRIVACY_POLICY.md) dokümanını inceleyebilirsiniz.
+
+---
+
+## ❓ Sıkça Sorulan Sorular / FAQ
+
+<details>
+<summary><b>1. Google Gemini API kullanımı ücretli mi? Kredi kartı ister mi?</b></summary>
+<p>Hayır. Google AI Studio, kişisel projeler ve bireysel kullanım için ücretsiz bir kota (Free Tier) sağlar. Kredi kartı tanımlamadan saniyeler içinde anahtarınızı oluşturabilirsiniz.</p>
+</details>
+
+<details>
+<summary><b>2. Chrome dışındaki tarayıcılarda da kullanabilir miyim?</b></summary>
+<p>Evet. Chromium altyapısını kullanan tüm modern tarayıcılarda (Brave, Microsoft Edge, Arc, Opera, Vivaldi vb.) doğrudan Chrome Web Store bağlantısı üzerinden eklentiyi yükleyip kullanabilirsiniz.</p>
+</details>
+
+<details>
+<summary><b>3. Ekşi Sözlük üyeliğimin olması zorunlu mu?</b></summary>
+<p>Hayır. Eklentinin yapay zeka özetleyicisi, sonsuz kaydırma, Zen modu ve arama araçları oturum açmadan da ziyaretçi modunda kusursuz çalışır.</p>
+</details>
+
+<details>
+<summary><b>4. Engellediğim kelime ve yazarlar sözlük hesabıma işlenir mi?</b></summary>
+<p>Hayır. Engelleyici kuralları yalnızca eklenti düzeyinde (istemci taraflı) uygulanır. Sözlük hesabınızdaki engelli listenize müdahale etmez; böylece Sözlük hesabınızdan bağımsız temiz bir akış sağlar.</p>
+</details>
 
 ---
 
@@ -225,7 +333,11 @@ Bu proje **MIT Lisansı** altında lisanslanmıştır. Detaylar için [`LICENSE`
 
 ---
 
-Geliştiriciyi desteklemek isterseniz:
+⭐ **ek$tension** hoşunuza gittiyse, projeyi [GitHub'da yıldızlayabilir](https://github.com/emreuluduz/ekstension) ve [Chrome Web Store'da puanlayarak](https://chromewebstore.google.com/detail/pcmiembjpbjejfhcdfmhnhmdnigoabja) destek olabilirsiniz!
+
+<br />
+
+Geliştiriciye kahve ısmarlamak isterseniz:
 
 <a href="https://buymeacoffee.com/emreuluduz" target="_blank">
   <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="42" />
