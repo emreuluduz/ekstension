@@ -1386,18 +1386,37 @@ function formatSummaryMarkdown(mdText) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
+  // Ekşi Sözlük Tarzı Gizli Bkz (Hidden Bkz) Dönüştürücü
+  const renderHiddenBkz = (rawTerm) => {
+    const cleanTerm = rawTerm.trim();
+    if (!cleanTerm) return rawTerm;
+    // URL encode için &amp; gibi escape edilmiş varlıkları decode et
+    const decodedTerm = cleanTerm.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+    const searchUrl = `https://eksisozluk.com/?q=${encodeURIComponent(decodedTerm)}`;
+    return `<a href="${searchUrl}" class="ekst-hidden-bkz" target="_blank" rel="noopener noreferrer" title="bkz: ${cleanTerm}">${cleanTerm}</a>`;
+  };
+
+  // 1. Birincil format: [kavram]*
+  html = html.replace(/\[([\p{L}\p{N}\s._\-&;]+?)\]\*/gu, (match, term) => renderHiddenBkz(term));
+
+  // 2. Fallback: (bkz: kavram)*
+  html = html.replace(/\(bkz:\s*([\p{L}\p{N}\s._\-&;]+?)\)\*/giu, (match, term) => renderHiddenBkz(term));
+
+  // 3. Fallback: `kavram` (tek backtick)
+  html = html.replace(/(?<!`)`([^`\n]+?)`(?!`)/gu, (match, term) => renderHiddenBkz(term));
+
+  // Normalize legacy headers if model outputs uppercase plain headers or bold headers (BEFORE bold processing)
+  html = html.replace(/^(\*{0,2})#*\s*BAŞLIK ÖZETİ:?(\*{0,2})\s*/gim, '### 📌 Başlık Özeti\n');
+  html = html.replace(/^(\*{0,2})#*\s*GENEL HAVA:?(\*{0,2})\s*/gim, '### 🎭 Genel Hava\n');
+  html = html.replace(/^(\*{0,2})#*\s*ÖNE ÇIKANLAR:?(\*{0,2})\s*/gim, '### 🧭 Tartışma Kırılımları & Kümeler\n');
+  html = html.replace(/^(\*{0,2})#*\s*TARTIŞMA KIRILIMLARI.*?:\s*(\*{0,2})/gim, '### 🧭 Tartışma Kırılımları & Kümeler\n');
+  html = html.replace(/^(\*{0,2})#*\s*DİKKAT ÇEKEN.*?:\s*(\*{0,2})/gim, '### 💡 Dikkat Çeken / Nüans\n');
+
+  // Headers without ### but with emojis (e.g. 📌 Başlık Özeti, 🎭 Genel Hava, 🧭 Tartışma Kırılımları, 💡 Dikkat Çeken)
+  html = html.replace(/^(📌|⚖️|💡|🎭|🧭)\s*(.*$)/gim, '### $1 $2');
+
   // Bold
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
-  // Normalize legacy headers if model outputs uppercase plain headers
-  html = html.replace(/^BAŞLIK ÖZETİ:\s*/gim, '### 📌 Başlık Özeti\n');
-  html = html.replace(/^GENEL HAVA:\s*/gim, '### 🎭 Genel Hava\n');
-  html = html.replace(/^ÖNE ÇIKANLAR:\s*/gim, '### 🧭 Tartışma Kırılımları & Kümeler\n');
-  html = html.replace(/^TARTIŞMA KIRILIMLARI.*?:\s*/gim, '### 🧭 Tartışma Kırılımları & Kümeler\n');
-  html = html.replace(/^DİKKAT ÇEKEN:\s*/gim, '### 💡 Dikkat Çeken / Nüans\n');
-
-  // Headers without ### (e.g. 📌 Başlık Özeti)
-  html = html.replace(/^(📌|⚖️|💡|🎭|🧭)\s*(.*$)/gim, '### $1 $2');
 
   const lines = html.split('\n');
   const processed = [];
@@ -1455,21 +1474,68 @@ function formatSummaryMarkdown(mdText) {
       }
     }
 
-    // Cluster cards: [Dönem / Kategori]: or <strong>[...]:</strong>
-    const clusterMatch = trimmed.match(/^[-*•]?\s*<strong>\[(.*?)\]:?<\/strong>:?/i) ||
-                         trimmed.match(/^[-*•]?\s*\[(.*?)\]:?/i);
-    if (clusterMatch && (currentSection.includes('🧭') || currentSection.includes('Tartışma') || currentSection.includes('Küme') || currentSection.includes('Öne Çıkan'))) {
-      if (inList) {
-        processed.push('</ul>');
-        inList = false;
+    // Cluster cards: In Tartışma Kırılımları / Kümeler section
+    const isClusterSection = currentSection.includes('🧭') || currentSection.includes('Tartışma') || currentSection.includes('Küme') || currentSection.includes('Öne Çıkan');
+    if (isClusterSection) {
+      let clusterTitle = null;
+
+      // 1. Bracket match: [Tema Adı] or <strong>[Tema Adı]</strong> or * [Tema Adı]
+      const bracketMatch = trimmed.match(/^[-*•\d.]*\s*(?:<strong>)?\[(.*?)\]:?(?:<\/strong>)?:?/i);
+      if (bracketMatch) {
+        clusterTitle = bracketMatch[1].trim();
+      } else {
+        // 2. Bold theme title: **Tema Adı:** or <strong>Tema Adı:</strong>
+        const boldThemeMatch = trimmed.match(/^[-*•\d.]*\s*<strong>([^<]+?)<\/strong>:?$/i);
+        if (boldThemeMatch) {
+          const candidate = boldThemeMatch[1].replace(/[:*]/g, '').trim();
+          const isInternalField = /^(hâkim|hakim|eleştiri|karşıt|çoğunluk|görüş|itiraz)/i.test(candidate);
+          if (!isInternalField && candidate.length > 2) {
+            clusterTitle = candidate;
+          }
+        } else {
+          // 3. Subheader: #### Tema Adı
+          const subHeaderMatch = trimmed.match(/^#{3,4}\s+(.*$)/);
+          if (subHeaderMatch) {
+            clusterTitle = subHeaderMatch[1].replace(/[:*]/g, '').trim();
+          } else {
+            // 4. Plain text title ending with colon: Tema Adı:
+            const plainTitleMatch = trimmed.match(/^[-*•\d.]*\s*([^:]{3,65}):$/);
+            if (plainTitleMatch) {
+              const candidate = plainTitleMatch[1].trim();
+              const isInternalField = /^(hâkim|hakim|eleştiri|karşıt|çoğunluk|görüş|itiraz)/i.test(candidate);
+              if (!isInternalField) {
+                clusterTitle = candidate;
+              }
+            }
+          }
+        }
       }
-      if (inClusterCard) {
-        processed.push('</div>');
+
+      if (clusterTitle) {
+        if (inList) {
+          processed.push('</ul>');
+          inList = false;
+        }
+        if (inClusterCard) {
+          processed.push('</div>');
+        }
+        inClusterCard = true;
+        processed.push(`<div class="ekst-cluster-card"><div class="ekst-cluster-title">🔹 ${clusterTitle}</div>`);
+        continue;
       }
-      inClusterCard = true;
-      const clusterTitle = clusterMatch[1].trim();
-      processed.push(`<div class="ekst-cluster-card"><div class="ekst-cluster-title">🔹 ${clusterTitle}</div>`);
-      continue;
+
+      // Inside cluster card: if it starts with Hâkim Görüş or Eleştiri, format it nicely into a list item
+      if (inClusterCard && !trimmed.startsWith('- ') && !trimmed.startsWith('* ') && !trimmed.startsWith('• ')) {
+        const isInternalField = /^(<strong>)?(hâkim|hakim|eleştiri|karşıt|çoğunluk)/i.test(trimmed);
+        if (isInternalField) {
+          if (!inList) {
+            processed.push('<ul>');
+            inList = true;
+          }
+          processed.push(`<li>${trimmed}</li>`);
+          continue;
+        }
+      }
     }
 
     // List bullets
@@ -1970,11 +2036,20 @@ UYULMASI ZORUNLU KURALLAR:
 5. TEKRARLARI BİRLEŞTİR: Aynı argümanı savunan onlarca entry'yi tek bir güçlü madde altında topla. "X şöyle demiş, Y böyle demiş" deme.
 6. SOMUT BİLGİLERİ KORU: İsim, tarih, fiyat, model, yasa, istatistik gibi kritik veriler varsa koru. Doğrulanmamış spekülasyonları "iddia ediliyor" olarak belirt.
 7. UYDURMA: Entry'lerde olmayan hiçbir bilgi veya şahsi yorum ekleme. Çelişkili görüşler varsa çelişkiyi koru.
+8. BAĞLAMA GÖRE AKILLI & SEÇİCİ BKZ KULLANIMI:
+   Başlığın türüne ve tartışmanın bağlamına göre, sözlük yazarlarının gerçekten tıklayıp incelemek veya entry girmek isteyeceği en kritik 2-4 referansa [kavram]* formatında bkz ver:
+   * 🎬 Dizi / Film / Kitap / Sanat: Başroldeki kilit oyuncular, yönetmen, senarist, yazar, yayınlandığı platform veya uyarlandığı/kıyaslandığı kült eser (örn: [christopher nolan]*, [cillian murphy]*, [netflix]*, [hbo]*, [dune]*).
+   * 🎮 Oyun / Teknoloji / Donanım: Geliştirici stüdyo, oyun yönetmeni, oyun motoru, platform/konsol, doğrudan rakip ürün veya kritik teknoloji (örn: [fromsoftware]*, [hidetaka miyazaki]*, [unreal engine 5]*, [steam]*, [rtx 4090]*).
+   * ⚽ Spor / Maç / Kulüp: Teknik direktör, kilit futbolcu/sporcu, turnuva, rakip takım veya kritik spor olgusu (örn: [jose mourinho]*, [şampiyonlar ligi]*, [derbi]*).
+   * 🏛️ Siyaset / Toplumsal Olaylar / Gündem: Tartışmanın merkezindeki kilit kamu figürü/siyasetçi, yasa/tasarı adı, referans verilen tarihi skandal/olay veya doğrudan ilgili olgu (örn: [bireysel silahlanma]*, [school shooting]*, [torba yasa]*).
+   * 🛒 Ürün / Hizmet / Marka: Kıyaslanan rakip model/marka, ana üretici veya spesifik işletim sistemi/teknoloji.
+   * ⚠️ ASLA BKZ VERİLMEYECEK ŞEYLER: Bağlam dışı sıradan şehir/ilçe isimleri (konu gezi/rehber değilse), genel kelimeler (okul, kapı, polis, araba), sıradan sıfatlar (sosyolojik, güzel, pahalı) veya önemsiz detaylar için asla bkz verme.
+   * Metin içindeki diğer dikkat çekici noktaları sadece **kalın** bırak.
 
 ÇIKTI FORMATI (Aşağıdaki Markdown başlıklarını ve etiket formatını harfiyen uygula):
 
 ### 📌 Başlık Özeti
-(Başlığın temel konusunu ve genel tartışmayı anlatan 2-3 net cümle. Anahtar kavramları **kalın** yap.)
+(Başlığın temel konusunu ve genel tartışmayı anlatan 2-3 net cümle. Bağlama uygun kilit referansları [kavram]* şeklinde bkz yap, diğer vurguları **kalın** bırak.)
 
 ### 🎭 Genel Hava
 #etiket1 #etiket2 #etiket3 (Örn: #tartışmalı #mizahi #bilgilendirici #kutuplaşmış #deneyim-ağırlıklı #sitemkâr)
@@ -2110,7 +2185,16 @@ function renderSummaryCard(data) {
     });
   }
 
-  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Kartı yukarıdaki sabit menünün (sticky top bar) arkasında kalmayacak şekilde güvenli konuma kaydır
+  try {
+    const topBar = document.querySelector('#top-bar');
+    const navOffset = (topBar ? topBar.offsetHeight : 60) + 70;
+    const cardRect = card.getBoundingClientRect();
+    const targetY = window.pageYOffset + cardRect.top - navOffset;
+    window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+  } catch (e) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
 }
 
 function showFloatingProgressPill(task) {
@@ -2593,3 +2677,7 @@ window.addEventListener('ekstension:entries-added', () => {
     handleNewEntriesForKnowledgeFilter();
   }, 60);
 });
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { formatSummaryMarkdown };
+}

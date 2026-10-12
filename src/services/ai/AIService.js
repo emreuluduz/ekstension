@@ -117,11 +117,20 @@ UYULMASI ZORUNLU KURALLAR:
 5. TEKRARLARI BİRLEŞTİR: Aynı argümanı savunan onlarca entry'yi tek bir güçlü madde altında topla. "X şöyle demiş, Y böyle demiş" deme.
 6. SOMUT BİLGİLERİ KORU: İsim, tarih, fiyat, model, yasa, istatistik gibi kritik veriler varsa koru. Doğrulanmamış spekülasyonları "iddia ediliyor" olarak belirt.
 7. UYDURMA: Entry'lerde olmayan hiçbir bilgi veya şahsi yorum ekleme. Çelişkili görüşler varsa çelişkiyi koru.
+8. BAĞLAMA GÖRE AKILLI & SEÇİCİ BKZ KULLANIMI:
+   Başlığın türüne ve tartışmanın bağlamına göre, sözlük yazarlarının gerçekten tıklayıp incelemek veya entry girmek isteyeceği en kritik 2-4 referansa [kavram]* formatında bkz ver:
+   * 🎬 Dizi / Film / Kitap / Sanat: Başroldeki kilit oyuncular, yönetmen, senarist, yazar, yayınlandığı platform veya uyarlandığı/kıyaslandığı kült eser (örn: [christopher nolan]*, [cillian murphy]*, [netflix]*, [hbo]*, [dune]*).
+   * 🎮 Oyun / Teknoloji / Donanım: Geliştirici stüdyo, oyun yönetmeni, oyun motoru, platform/konsol, doğrudan rakip ürün veya kritik teknoloji (örn: [fromsoftware]*, [hidetaka miyazaki]*, [unreal engine 5]*, [steam]*, [rtx 4090]*).
+   * ⚽ Spor / Maç / Kulüp: Teknik direktör, kilit futbolcu/sporcu, turnuva, rakip takım veya kritik spor olgusu (örn: [jose mourinho]*, [şampiyonlar ligi]*, [derbi]*).
+   * 🏛️ Siyaset / Toplumsal Olaylar / Gündem: Tartışmanın merkezindeki kilit kamu figürü/siyasetçi, yasa/tasarı adı, referans verilen tarihi skandal/olay veya doğrudan ilgili olgu (örn: [bireysel silahlanma]*, [school shooting]*, [torba yasa]*).
+   * 🛒 Ürün / Hizmet / Marka: Kıyaslanan rakip model/marka, ana üretici veya spesifik işletim sistemi/teknoloji.
+   * ⚠️ ASLA BKZ VERİLMEYECEK ŞEYLER: Bağlam dışı sıradan şehir/ilçe isimleri (konu gezi/rehber değilse), genel kelimeler (okul, kapı, polis, araba), sıradan sıfatlar (sosyolojik, güzel, pahalı) veya önemsiz detaylar için asla bkz verme.
+   * Metin içindeki diğer dikkat çekici noktaları sadece **kalın** bırak.
 
 ÇIKTI FORMATI (Aşağıdaki Markdown başlıklarını ve etiket formatını harfiyen uygula):
 
 ### 📌 Başlık Özeti
-(Başlığın temel konusunu ve genel tartışmayı anlatan 2-3 net cümle. Anahtar kavramları **kalın** yap.)
+(Başlığın temel konusunu ve genel tartışmayı anlatan 2-3 net cümle. Bağlama uygun kilit referansları [kavram]* şeklinde bkz yap, diğer vurguları **kalın** bırak.)
 
 ### 🎭 Genel Hava
 #etiket1 #etiket2 #etiket3 (Örn: #tartışmalı #mizahi #bilgilendirici #kutuplaşmış #deneyim-ağırlıklı #sitemkâr)

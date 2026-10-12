@@ -734,6 +734,7 @@ body[data-theme="dark"] .ekstension-popover-error {
 
 /* AI Summary Main Card */
 .ekst-ai-summary-card {
+  scroll-margin-top: 130px;
   margin: 12px 0 20px 0;
   border-radius: 12px;
   background: #ffffff;
@@ -962,6 +963,24 @@ body[data-theme="dark"] .ekstension-popover-error {
   color: #78350f;
   margin: 0 !important;
   line-height: 1.6;
+}
+
+/* Ekşi Sözlük Tarzı Gizli Bkz (Hidden Bkz) */
+.ekst-hidden-bkz {
+  color: inherit !important;
+  text-decoration: none !important;
+  font-weight: 600;
+  border-bottom: 1.5px dotted #64748b !important;
+  cursor: pointer !important;
+  padding: 0 1px;
+  transition: color 0.15s ease, border-bottom-color 0.15s ease, background-color 0.15s ease;
+}
+
+.ekst-hidden-bkz:hover {
+  color: #4338ca !important;
+  border-bottom: 1.5px solid #4338ca !important;
+  background-color: rgba(67, 56, 202, 0.07);
+  border-radius: 3px;
 }
 
 /* Floating Progress Pill */
@@ -1253,6 +1272,19 @@ body[data-theme="dark"] .ekst-nuance-title {
 body.theme-dark .ekst-nuance-callout p,
 body[data-theme="dark"] .ekst-nuance-callout p {
   color: #fef3c7;
+}
+
+body.theme-dark .ekst-hidden-bkz,
+body[data-theme="dark"] .ekst-hidden-bkz {
+  color: inherit !important;
+  border-bottom: 1.5px dotted #94a3b8 !important;
+}
+
+body.theme-dark .ekst-hidden-bkz:hover,
+body[data-theme="dark"] .ekst-hidden-bkz:hover {
+  color: #a5b4fc !important;
+  border-bottom: 1.5px solid #a5b4fc !important;
+  background-color: rgba(165, 180, 252, 0.12);
 }
 
 body.theme-dark .ekst-single-summary-box,

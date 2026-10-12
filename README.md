@@ -9,7 +9,7 @@
     <img src="https://img.shields.io/badge/Chrome_Web_Store-ek$tension-4285F4.svg?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Chrome Web Store" />
   </a>
   <a href="https://github.com/emreuluduz/ekstension/releases">
-    <img src="https://img.shields.io/badge/version-1.1.0-3b82f6.svg?style=for-the-badge&logo=semver&logoColor=white" alt="Version 1.1.0" />
+    <img src="https://img.shields.io/badge/version-1.2.0-3b82f6.svg?style=for-the-badge&logo=semver&logoColor=white" alt="Version 1.2.0" />
   </a>
   <a href="manifest.json">
     <img src="https://img.shields.io/badge/Manifest-V3-10b981.svg?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Manifest V3" />
@@ -84,6 +84,8 @@
 - **Tekil Entry Özetleyici (`⚡ Özetle`):** 500 karakterden uzun kapsamlı entry'lerin altında beliren buton ile anında 1-2 maddelik hap özet üretir.
 - **🧠 Bilgi Odaklı Akıllı Filtreleme (AI Knowledge Filter):** Başlıklardaki geyik, trol, linç veya konu dışı entry'leri yapay zeka ile eleyerek yalnızca somut bilgi, kaynak, veri ve mantıksal argüman içeren entry'leri anında filtreler (`⚡ Sadece Bilgi İçerenler`).
 - **📊 Konu Kümeleme Özeti (Topic Cluster Summary):** Çok sayfalı başlıklardaki entry'leri kronolojik ve tematik kümelere ayırarak tartışmanın zaman içindeki gelişimini ve farklı görüş kamplarını ayrı gruplar halinde özetler.
+- **🔗 Bağlamsal Akıllı Bkz (Context-Aware Smart Bkz):** Başlık özetlerindeki anahtar terimleri (film/dizilerde yönetmen, oyuncu ve platform; spor konularında futbolcu, teknik direktör; oyunlarda stüdyo, oyun motoru; gündem ve siyasette kilit figür ve kanunlar) yapay zeka ile tespit eder ve doğal Ekşi Sözlük tarzı `(bkz: ...)` iç bağlantılarına dönüştürür.
+- **🛡️ Gelişmiş Kart & UI Kararlılığı:** Kümelenmiş özet çıktılarındaki Markdown yapılarını (kalın başlıklar, alt gruplar) kusursuz ayrıştıran esnek sözdizim motoru ve sözlüğün yapışkan üst çubuğu (`#top-bar`) ile çakışmayan güvenli otomatik odaklama.
 - **Bulut Hızı & Sıfır Donanım Yükü:** Tüm işlemler Google'ın güvenli altyapısında çalışır; bilgisayarınızı yormaz, 1.5 - 2 saniyede sonuç verir.
 - **%100 Ücretsiz API Desteği:** Google AI Studio üzerinden alınan ücretsiz API anahtarı ile kolayca çalışır ([Kurulum Adımları](#-gemini-api-anahtarı-nasıl-alınır)).
 

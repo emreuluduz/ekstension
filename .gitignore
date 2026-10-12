@@ -6,6 +6,7 @@ yarn.lock
 # Build outputs
 dist/
 build/
+docs/
 *.zip
 
 # IDE and Editor files
