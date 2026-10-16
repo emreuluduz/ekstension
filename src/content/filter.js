@@ -10,7 +10,8 @@ let state = {
   filteredWords: [],
   blockedAuthors: [],
   mediaOnlyActive: false,
-  knowledgeFilterActive: false
+  knowledgeFilterActive: false,
+  censorSponsored: true
 };
 
 let knowledgeFilterCache = null; // TopicCache instance
@@ -354,6 +355,96 @@ function applyAuthorBlocking() {
       placeholder.remove();
       if (content) content.style.display = '';
       if (footer) footer.style.display = '';
+    }
+  });
+}
+
+// Sponsorlu Entry Kontrolü
+function isSponsoredEntry(entry) {
+  if (!entry) return false;
+  // 1. Selector kontrolü (#corporate-content-sponsored-entry, .sponsored, span[id*="sponsored"])
+  const sponsoredEl = entry.querySelector('#corporate-content-sponsored-entry, .sponsored, span[id*="sponsored"]');
+  if (sponsoredEl) return true;
+
+  // 2. data-flags kontrolü (data-flags="... sponsored ...")
+  const flags = entry.getAttribute('data-flags') || '';
+  if (flags.toLowerCase().includes('sponsored')) return true;
+
+  return false;
+}
+
+// 2.1 Sponsorlu Entry Sansürleme / Gizleme
+function applySponsoredEntryCensoring() {
+  const entries = document.querySelectorAll('#entry-item-list > li, li[id="entry-item"], li[data-id]');
+  if (!entries || entries.length === 0) return;
+
+  entries.forEach(entry => {
+    const isSponsored = isSponsoredEntry(entry);
+    let placeholder = entry.querySelector('.ekstension-sponsored-blocked-placeholder');
+    const content = entry.querySelector('.content');
+    const footer = entry.querySelector('footer');
+
+    // Eğer ayar kapalıysa veya entry sponsorlu değilse:
+    if (!state.censorSponsored || !isSponsored) {
+      if (placeholder) {
+        placeholder.remove();
+        // Eğer yazar engellemesi yoksa görünürlüğü geri yükle
+        const isAuthorBlocked = entry.querySelector('.ekstension-author-blocked-placeholder');
+        if (!isAuthorBlocked) {
+          if (content) content.style.display = '';
+          if (footer) footer.style.display = '';
+        }
+      }
+      return;
+    }
+
+    // Eğer entry zaten yazar engellemesi ile gizlenmişse çakışmayı önle
+    if (entry.querySelector('.ekstension-author-blocked-placeholder')) {
+      if (placeholder) placeholder.remove();
+      return;
+    }
+
+    const author = (entry.getAttribute('data-author') ||
+      entry.querySelector('.entry-author')?.textContent ||
+      'sponsorlu').trim();
+
+    if (!placeholder) {
+      placeholder = document.createElement('div');
+      placeholder.className = 'ekstension-sponsored-blocked-placeholder';
+      placeholder.setAttribute('data-ekstension-processed', 'true');
+      placeholder.innerHTML = `
+        <div class="ekstension-sponsored-info">
+          <span class="ekstension-sponsored-icon">📢</span>
+          <span>Sponsorlu içerik gizlendi (<strong class="ekstension-author-name">@${author}</strong>)</span>
+          <span class="ekstension-sponsored-badge">sponsorlu</span>
+        </div>
+        <div class="ekstension-placeholder-actions">
+          <button class="ekstension-toggle-sponsored-entry" type="button">Göster</button>
+        </div>
+      `;
+
+      if (content) content.style.display = 'none';
+      if (footer) footer.style.display = 'none';
+
+      const toggleBtn = placeholder.querySelector('.ekstension-toggle-sponsored-entry');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const isHidden = content && content.style.display === 'none';
+          if (content) content.style.display = isHidden ? '' : 'none';
+          if (footer) footer.style.display = isHidden ? '' : 'none';
+          toggleBtn.textContent = isHidden ? 'Gizle' : 'Göster';
+        });
+      }
+
+      entry.insertBefore(placeholder, entry.firstChild);
+    } else {
+      const toggleBtn = placeholder.querySelector('.ekstension-toggle-sponsored-entry');
+      if (toggleBtn && toggleBtn.textContent === 'Göster') {
+        if (content) content.style.display = 'none';
+        if (footer) footer.style.display = 'none';
+      }
     }
   });
 }
@@ -2432,6 +2523,7 @@ function runAllEnhancements() {
   try {
     filterTopics();
     applyAuthorBlocking();
+    applySponsoredEntryCensoring();
     applyMediaPreviews();
     injectMediaFilterButton();
     injectKnowledgeFilterButton();
@@ -2498,6 +2590,39 @@ function initialize() {
     state.blockedAuthors = authors || [];
     applyAuthorBlocking();
   });
+
+  // Sponsorlu içerik sansürleme ayarını yükle
+  if (typeof chrome !== 'undefined' && chrome.storage) {
+    const handleSponsoredSetting = (val) => {
+      if (typeof val === 'boolean') {
+        state.censorSponsored = val;
+        applySponsoredEntryCensoring();
+      }
+    };
+
+    if (chrome.storage.sync) {
+      chrome.storage.sync.get('censor_sponsored_entries', (data) => {
+        if (data && typeof data.censor_sponsored_entries === 'boolean') {
+          handleSponsoredSetting(data.censor_sponsored_entries);
+        } else if (chrome.storage.local) {
+          chrome.storage.local.get('censor_sponsored_entries', (localData) => {
+            if (localData && typeof localData.censor_sponsored_entries === 'boolean') {
+              handleSponsoredSetting(localData.censor_sponsored_entries);
+            }
+          });
+        }
+      });
+    }
+
+    if (chrome.storage.onChanged) {
+      chrome.storage.onChanged.addListener((changes) => {
+        if (changes.censor_sponsored_entries) {
+          state.censorSponsored = changes.censor_sponsored_entries.newValue;
+          applySponsoredEntryCensoring();
+        }
+      });
+    }
+  }
 
   // Restore active summary task if ongoing
   chrome.storage.local.get('active_summary_task', (stored) => {
@@ -2669,6 +2794,7 @@ window.addEventListener('ekstension:entries-added', () => {
     applyMediaOnlyFilter();
   }
   applyAuthorBlocking();
+  applySponsoredEntryCensoring();
 
   // 2. Kalan sayfa içi butonları ve araçları çalıştır
   if (observerTimeout) clearTimeout(observerTimeout);
@@ -2679,5 +2805,9 @@ window.addEventListener('ekstension:entries-added', () => {
 });
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { formatSummaryMarkdown };
+  module.exports = {
+    formatSummaryMarkdown,
+    isSponsoredEntry,
+    applySponsoredEntryCensoring
+  };
 }

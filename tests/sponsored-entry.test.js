@@ -55,16 +55,12 @@ class MockElement {
   }
   set innerHTML(html) {
     this._innerHTML = html;
-    // Simple parser for basic test element construction
     this.children = [];
-    if (html.includes('ekstension-sponsored-blocked-placeholder')) {
-      const placeholder = new MockElement('div');
-      placeholder.className = 'ekstension-sponsored-blocked-placeholder';
+    if (html.includes('ekstension-toggle-sponsored-entry')) {
       const toggleBtn = new MockElement('button');
       toggleBtn.className = 'ekstension-toggle-sponsored-entry';
       toggleBtn.textContent = 'Göster';
-      placeholder.appendChild(toggleBtn);
-      this.appendChild(placeholder);
+      this.appendChild(toggleBtn);
     }
   }
 
@@ -265,4 +261,81 @@ test('applySponsoredEntryCensoring: collapses sponsored entry and creates placeh
   // Verify placeholder was inserted
   const placeholder = entry.querySelector('.ekstension-sponsored-blocked-placeholder');
   assert.ok(placeholder, 'Placeholder should be inserted into entry');
+
+  // Verify toggle button click reveals content
+  const toggleBtn = placeholder.querySelector('.ekstension-toggle-sponsored-entry');
+  assert.ok(toggleBtn, 'Toggle button should exist');
+  assert.equal(toggleBtn.textContent, 'Göster');
+
+  toggleBtn.click();
+  assert.equal(content.style.display, '');
+  assert.equal(footer.style.display, '');
+  assert.equal(toggleBtn.textContent, 'Gizle');
+
+  toggleBtn.click();
+  assert.equal(content.style.display, 'none');
+  assert.equal(footer.style.display, 'none');
+  assert.equal(toggleBtn.textContent, 'Göster');
+
+  // Verify disabling setting restores entry
+  scope.state.censorSponsored = false;
+  scope.applySponsoredEntryCensoring();
+  assert.equal(content.style.display, '');
+  assert.equal(footer.style.display, '');
+  assert.equal(entry.querySelector('.ekstension-sponsored-blocked-placeholder'), null);
 });
+
+test('applySponsoredEntryCensoring: correctly handles user prompt example (timurun fillerinin bakicisi)', () => {
+  const mockDoc = new MockElement();
+  const entryList = new MockElement('ul');
+  entryList.id = 'entry-item-list';
+  mockDoc.appendChild(entryList);
+
+  mockDoc.querySelector = (sel) => {
+    if (sel.includes('#entry-item-list')) return entryList;
+    return MockElement.prototype.querySelector.call(mockDoc, sel);
+  };
+  mockDoc.querySelectorAll = (sel) => {
+    if (sel.includes('#entry-item-list > li') || sel.includes('#entry-item-list li')) {
+      return entryList.children;
+    }
+    return MockElement.prototype.querySelectorAll.call(mockDoc, sel);
+  };
+
+  const scope = getFilterScope(mockDoc);
+
+  // User exact sample structure
+  const entry = new MockElement('li');
+  entry.id = 'entry-item';
+  entry.setAttribute('data-id', '187159841');
+  entry.setAttribute('data-author', 'timurun fillerinin bakicisi');
+  entry.setAttribute('data-author-id', '3592824');
+  entry.setAttribute('data-flags', 'share report vote');
+
+  const content = new MockElement('div');
+  content.className = 'content';
+  content.textContent = 'olayın videosu elinde olta olan çocuğun...';
+  entry.appendChild(content);
+
+  const footer = new MockElement('footer');
+  const span = new MockElement('span');
+  span.id = 'corporate-content-sponsored-entry';
+  span.className = 'sponsored';
+  span.textContent = 'sponsorlu';
+  footer.appendChild(span);
+  entry.appendChild(footer);
+
+  entryList.appendChild(entry);
+
+  assert.equal(scope.isSponsoredEntry(entry), true);
+
+  scope.state.censorSponsored = true;
+  scope.applySponsoredEntryCensoring();
+
+  assert.equal(content.style.display, 'none');
+  assert.equal(footer.style.display, 'none');
+
+  const placeholder = entry.querySelector('.ekstension-sponsored-blocked-placeholder');
+  assert.ok(placeholder, 'Placeholder should be inserted');
+});
+
