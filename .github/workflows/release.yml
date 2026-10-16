@@ -79,6 +79,7 @@ jobs:
       - name: Upload to Chrome Web Store
         env:
           EXTENSION_ID: ${{ secrets.EXTENSION_ID }}
+          PUBLISHER_ID: ${{ secrets.PUBLISHER_ID }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
           REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }}
@@ -87,12 +88,14 @@ jobs:
           echo "Uploading package to Chrome Web Store..."
           npx --yes chrome-webstore-upload-cli upload \
             --source="${{ env.ZIP_FILE }}" \
-            --extension-id="$EXTENSION_ID"
+            --extension-id="$EXTENSION_ID" \
+            --publisher-id="$PUBLISHER_ID"
 
           if [ "$SUBMIT_FOR_REVIEW" = "true" ]; then
             echo "Submitting uploaded version for review..."
             npx --yes chrome-webstore-upload-cli publish \
-            --extension-id="$EXTENSION_ID"
+              --extension-id="$EXTENSION_ID" \
+              --publisher-id="$PUBLISHER_ID"
           else
             echo "Uploaded as draft. Skipping review submission."
           fi
