@@ -73,14 +73,25 @@ jobs:
 
       # 5. UPLOAD & PUBLISH TO CHROME WEB STORE
       - name: Upload to Chrome Web Store
-        uses: mnao305/chrome-webstore-upload@v5.0.0
-        with:
-          file-name: ${{ env.ZIP_FILE }}
-          extension-id: ${{ secrets.EXTENSION_ID }}
-          client-id: ${{ secrets.CLIENT_ID }}
-          client-secret: ${{ secrets.CLIENT_SECRET }}
-          refresh-token: ${{ secrets.REFRESH_TOKEN }}
-          publish: ${{ github.event_name == 'push' || github.event.inputs.submit_for_review == true }}
+        env:
+          EXTENSION_ID: ${{ secrets.EXTENSION_ID }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }}
+          SUBMIT_FOR_REVIEW: ${{ github.event_name == 'push' || github.event.inputs.submit_for_review == true }}
+        run: |
+          echo "Uploading package to Chrome Web Store..."
+          npx --yes chrome-webstore-upload-cli upload \
+            --source="${{ env.ZIP_FILE }}" \
+            --extension-id="$EXTENSION_ID"
+
+          if [ "$SUBMIT_FOR_REVIEW" = "true" ]; then
+            echo "Submitting uploaded version for review..."
+            npx --yes chrome-webstore-upload-cli publish \
+            --extension-id="$EXTENSION_ID"
+          else
+            echo "Uploaded as draft. Skipping review submission."
+          fi
 
       # 6. GITHUB RELEASE
       - name: Create GitHub Release
