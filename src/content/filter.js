@@ -410,16 +410,27 @@ function applySponsoredEntryCensoring() {
 
     if (!placeholder) {
       placeholder = document.createElement('div');
-      placeholder.className = 'ekstension-sponsored-blocked-placeholder';
+      placeholder.className = 'ekstension-sponsored-blocked-placeholder is-collapsed';
       placeholder.setAttribute('data-ekstension-processed', 'true');
       placeholder.innerHTML = `
-        <div class="ekstension-sponsored-info">
-          <span class="ekstension-sponsored-icon">📢</span>
-          <span>Sponsorlu içerik gizlendi (<strong class="ekstension-author-name">@${author}</strong>)</span>
-          <span class="ekstension-sponsored-badge">sponsorlu</span>
+        <div class="ekstension-sponsored-card-body">
+          <div class="ekstension-sponsored-icon-badge">
+            <span class="ekstension-sponsored-icon">📢</span>
+          </div>
+          <div class="ekstension-sponsored-details">
+            <div class="ekstension-sponsored-header">
+              <span class="ekstension-sponsored-badge">Sponsorlu Entry</span>
+              <span class="ekstension-sponsored-author-tag">@${author}</span>
+            </div>
+            <div class="ekstension-sponsored-title">Bu içerik sponsorlu / reklam olduğu için gizlendi</div>
+            <div class="ekstension-sponsored-subtext">Sözlük akışınızı temiz tutmak için bu entry sansürlendi. İncelemek isterseniz içeriği açabilirsiniz.</div>
+          </div>
         </div>
-        <div class="ekstension-placeholder-actions">
-          <button class="ekstension-toggle-sponsored-entry" type="button">Göster</button>
+        <div class="ekstension-sponsored-actions">
+          <button class="ekstension-toggle-sponsored-entry" type="button" title="Sponsorlu içeriği göster/gizle">
+            <span class="ekst-toggle-icon">👁️</span>
+            <span class="ekst-toggle-label">İçeriği Göster</span>
+          </button>
         </div>
       `;
 
@@ -434,14 +445,30 @@ function applySponsoredEntryCensoring() {
           const isHidden = content && content.style.display === 'none';
           if (content) content.style.display = isHidden ? '' : 'none';
           if (footer) footer.style.display = isHidden ? '' : 'none';
-          toggleBtn.textContent = isHidden ? 'Gizle' : 'Göster';
+
+          const label = toggleBtn.querySelector('.ekst-toggle-label');
+          const icon = toggleBtn.querySelector('.ekst-toggle-icon');
+
+          if (isHidden) {
+            placeholder.classList.add('is-expanded');
+            placeholder.classList.remove('is-collapsed');
+            if (label) label.textContent = 'Tekrar Gizle';
+            if (icon) icon.textContent = '🙈';
+            if (!label) toggleBtn.textContent = 'Gizle';
+          } else {
+            placeholder.classList.remove('is-expanded');
+            placeholder.classList.add('is-collapsed');
+            if (label) label.textContent = 'İçeriği Göster';
+            if (icon) icon.textContent = '👁️';
+            if (!label) toggleBtn.textContent = 'Göster';
+          }
         });
       }
 
       entry.insertBefore(placeholder, entry.firstChild);
     } else {
       const toggleBtn = placeholder.querySelector('.ekstension-toggle-sponsored-entry');
-      if (toggleBtn && toggleBtn.textContent === 'Göster') {
+      if (toggleBtn && (toggleBtn.textContent.includes('Göster') || placeholder.classList.contains('is-collapsed'))) {
         if (content) content.style.display = 'none';
         if (footer) footer.style.display = 'none';
       }

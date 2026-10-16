@@ -59,7 +59,14 @@ class MockElement {
     if (html.includes('ekstension-toggle-sponsored-entry')) {
       const toggleBtn = new MockElement('button');
       toggleBtn.className = 'ekstension-toggle-sponsored-entry';
-      toggleBtn.textContent = 'Göster';
+      const icon = new MockElement('span');
+      icon.className = 'ekst-toggle-icon';
+      icon.textContent = '👁️';
+      const label = new MockElement('span');
+      label.className = 'ekst-toggle-label';
+      label.textContent = 'İçeriği Göster';
+      toggleBtn.appendChild(icon);
+      toggleBtn.appendChild(label);
       this.appendChild(toggleBtn);
     }
   }
@@ -121,6 +128,8 @@ class MockElement {
         else if (sel === '.content' && el.classList.contains('content')) matches = true;
         else if (sel === '.ekstension-sponsored-blocked-placeholder' && el.classList.contains('ekstension-sponsored-blocked-placeholder')) matches = true;
         else if (sel === '.ekstension-toggle-sponsored-entry' && el.classList.contains('ekstension-toggle-sponsored-entry')) matches = true;
+        else if (sel === '.ekst-toggle-label' && el.classList.contains('ekst-toggle-label')) matches = true;
+        else if (sel === '.ekst-toggle-icon' && el.classList.contains('ekst-toggle-icon')) matches = true;
       }
 
       if (matches && el !== this) results.push(el);
@@ -265,17 +274,20 @@ test('applySponsoredEntryCensoring: collapses sponsored entry and creates placeh
   // Verify toggle button click reveals content
   const toggleBtn = placeholder.querySelector('.ekstension-toggle-sponsored-entry');
   assert.ok(toggleBtn, 'Toggle button should exist');
-  assert.equal(toggleBtn.textContent, 'Göster');
+  assert.match(toggleBtn.textContent, /Göster/);
+  assert.equal(placeholder.classList.contains('is-collapsed'), true);
 
   toggleBtn.click();
   assert.equal(content.style.display, '');
   assert.equal(footer.style.display, '');
-  assert.equal(toggleBtn.textContent, 'Gizle');
+  assert.match(toggleBtn.textContent, /Gizle/);
+  assert.equal(placeholder.classList.contains('is-expanded'), true);
 
   toggleBtn.click();
   assert.equal(content.style.display, 'none');
   assert.equal(footer.style.display, 'none');
-  assert.equal(toggleBtn.textContent, 'Göster');
+  assert.match(toggleBtn.textContent, /Göster/);
+  assert.equal(placeholder.classList.contains('is-collapsed'), true);
 
   // Verify disabling setting restores entry
   scope.state.censorSponsored = false;
