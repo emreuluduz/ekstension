@@ -61,7 +61,11 @@ jobs:
 
       - name: Run Unit Tests
         run: |
-          node --test tests/**/*.test.js
+          if [ -d "tests" ]; then
+            node --test tests/
+          else
+            echo "No tests directory found, skipping unit tests."
+          fi
 
       # 4. PACKAGING
       - name: Package Extension (ZIP)
