@@ -9,7 +9,7 @@
     <img src="https://img.shields.io/badge/Chrome_Web_Store-ek$tension-4285F4.svg?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Chrome Web Store" />
   </a>
   <a href="https://github.com/emreuluduz/ekstension/releases">
-    <img src="https://img.shields.io/badge/version-1.2.0-3b82f6.svg?style=for-the-badge&logo=semver&logoColor=white" alt="Version 1.2.0" />
+    <img src="https://img.shields.io/badge/version-1.3.0-3b82f6.svg?style=for-the-badge&logo=semver&logoColor=white" alt="Version 1.3.0" />
   </a>
   <a href="manifest.json">
     <img src="https://img.shields.io/badge/Manifest-V3-10b981.svg?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Manifest V3" />
@@ -99,6 +99,7 @@
 - **🎬 Medya & Link Filtresi:** Başlık sayfalarında tek tıkla (`[ 🎬 Sadece Medya & Linkler ]`) metin ağırlıklı entry'leri gizleyip sadece görsel, video veya harici link içeren entry'leri listeleme.
 - **🖼️ Satır İçi Medya Önizleme & Zoom:** YouTube videolarını ve görsel bağlantılarını (`soz.lk`, `eksisozluk.com/img/`, `.jpg`, `.png`, `hizliresim`, `imgur`, `ibb.co`, `resmim.net`) sayfadan ayrılmadan doğrudan entry içinde görüntüleme, oynatma, doğal çözünürlükte büyütüp küçültme (Zoom toggle) ve gizleme kontrolleri.
 - **🚫 1-Tıkla Yazar / Troll Engelleme:** İstenmeyen yazarları tek tıkla (`🚫`) engelleme ve gizleme.
+- **📢 Sponsorlu Entry Sansürleme:** Sözlükteki kurumsal ve sponsorlu/reklam içerikli entry'leri (`#corporate-content-sponsored-entry`, `.sponsored`) otomatik tespit edip ferah bir entry kartı görünümüyle sansürleme; kullanıcı istediğinde `[👁️ İçeriği Göster]` butonuyla anında açıp kapatabilme ve eklenti ayarlarından kontrol edebilme.
 
 ---
 
