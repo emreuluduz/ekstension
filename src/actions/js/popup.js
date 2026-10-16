@@ -411,6 +411,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
+  // Sponsorlu entry sansürleme toggle listener'ı
+  const censorToggle = document.getElementById('censor-sponsored-toggle');
+  if (censorToggle) {
+    const isCensorEnabled = await Storage.get(STORAGE_KEYS.CENSOR_SPONSORED);
+    censorToggle.checked = isCensorEnabled !== false;
+
+    censorToggle.addEventListener('change', async (e) => {
+      await Storage.set(STORAGE_KEYS.CENSOR_SPONSORED, e.target.checked);
+    });
+  }
+
   // Başlangıç yüklemesi
   await Topics.load();
 

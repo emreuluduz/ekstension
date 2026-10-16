@@ -8,7 +8,8 @@ export const STORAGE_KEYS = {
   FILTERED_WORDS: 'filteredWords',
   BLOCKED_AUTHORS: 'blockedAuthors',
   THEME: 'theme',
-  CURRENT_SEARCH_RESULTS: 'currentSearchResults'
+  CURRENT_SEARCH_RESULTS: 'currentSearchResults',
+  CENSOR_SPONSORED: 'censor_sponsored_entries'
 };
 
 export const MESSAGE_TYPES = {

@@ -43,6 +43,14 @@
         "message": "Enter author nick...",
         "description": "Placeholder text for author input"
     },
+    "censor_sponsored_label": {
+        "message": "Censor Sponsored Entries",
+        "description": "Label for censoring sponsored entries toggle"
+    },
+    "censor_sponsored_desc": {
+        "message": "Hides sponsored and commercial entries with a click-to-expand placeholder.",
+        "description": "Description for censoring sponsored entries toggle"
+    },
     "backup_restore_label": {
         "message": "Backup & Restore",
         "description": "Backup and restore section title"

@@ -43,6 +43,14 @@
         "message": "Yazar nicki girin...",
         "description": "Yazar girişi için placeholder metni"
     },
+    "censor_sponsored_label": {
+        "message": "Sponsorlu Entry'leri Sansürle",
+        "description": "Sponsorlu entry sansürleme seçeneği etiketi"
+    },
+    "censor_sponsored_desc": {
+        "message": "Sözlükteki sponsorlu/reklam içerikli entry'leri gizler ve tıklayınca açılır hale getirir.",
+        "description": "Sponsorlu entry sansürleme açıklaması"
+    },
     "backup_restore_label": {
         "message": "Yedekleme & Geri Yükleme",
         "description": "Yedekleme ve geri yükleme başlığı"
